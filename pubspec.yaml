@@ -1,0 +1,67 @@
+name: leakuku
+description: A new Flutter project for chicken rearing management.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Functional Programming for Clean Architecture
+  dartz: ^0.10.1
+  
+  # Notifications
+  flutter_local_notifications: ^17.1.2
+  
+  # Charts
+  fl_chart: ^0.68.0
+  
+  # Icons
+  font_awesome_flutter: ^10.7.0
+  
+  # Utility
+  equatable: ^2.0.5
+  intl: ^0.19.0
+  json_annotation: ^4.9.0
+  
+  # Security
+  crypto: ^3.0.3  # For password hashing
+  shared_preferences: ^2.2.2  # For persistent login
+  connectivity_plus: ^5.0.2  # Check internet connection
+  flutter_secure_storage: ^9.0.0  # Secure storage for tokens
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^3.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  hive_generator: ^2.0.1
+  analyzer: ^6.4.1
+  
+  # Testing
+  mockito: ^5.4.4  # For mocking in tests
+  integration_test:
+    sdk: flutter
+
+# Flutter specific configuration
+flutter:
+  uses-material-design: true
+  
+  # assets:
+  #   - images/
+  #   - assets/
