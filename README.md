@@ -1,75 +1,138 @@
 # LeaKuku Poultry Manager  
 Smart Poultry Management for Modern Farmers
 
-🔗 **Demo:** https://drive.google.com/drive/folders/1WiMP5VcU7LZiBW6nSxtbb2Vy1YuLl6En?usp=drive_link  
-🔗 **Pitch Deck:** https://gamma.app/docs/Lea-Kuku-Smart-Poultry-Management-for-Modern-Farmers-18fiibevsmgkggf  
-🔗 **Repository:** https://github.com/Mutindadev/leakuku-poultry-manager
+🔗 **Demo:** [Link](https://drive.google.com/drive/folders/1WiMP5VcU7LZiBW6nSxtbb2Vy1YuLl6En?usp=drive_link)  
+🔗 **Pitch Deck:** [Link](https://gamma.app/docs/Lea-Kuku-Smart-Poultry-Management-for-Modern-Farmers-18fiibevsmgkggf)  
+🔗 **Repository:** [Link](https://github.com/Mutindadev/leakuku-poultry-manager)
+🔗 **Repository:** adapted from older repo  
+[Leakuku Repository](https://github.com/Mutindadev/leakuku)
 
 ---
 
 ## 📌 Overview
 
-LeaKuku Poultry Manager is a smart digital farm management system designed to help poultry farmers run modern, efficient, and data-driven operations.  
-It automates record-keeping, flock management, expenses, feeding cycles, mortality tracking, and productivity analytics — all through a clean, friendly, mobile-ready interface.
-
 This project is built with **clean architecture**, structured state management, a scalable data layer, and modern UI/UX patterns so even beginner farmers can navigate it easily.
+# 🐓 Leakuku Poultry Management System
+
+Leakuku is a modern, full-stack poultry management system designed to help farmers automate, track, and optimize daily poultry operations.  
+The platform provides tools for flock management, vaccination schedules, breed data, weekly plans, farm analytics, user authentication, and more — all wrapped in a clean, responsive UI.
 
 ---
 
-## ✨ Key Features
+## 🚀 Features Overview
 
-### **1. Authentication**
-- Secure email & password sign-in
-- Token-based session management
-- Error-handling for all edge cases
-- Logged-in state persistence
-
----
-
-### **2. Dashboard**
-A snapshot of the entire farm:
-- Current flock count  
-- Total eggs collected  
-- Feed usage  
-- Expenses overview  
-- Quick-action buttons  
-
-Designed for fast decision-making.
+### 🔐 **1. User Authentication**
+- Full email/password authentication flow  
+- Secure password hashing  
+- Login, logout, and session handling  
+- Role-based access supported for future expansion  
+- Persistent authentication with automatic token refresh  
+- Error-handled user validation
 
 ---
 
-### **3. Flock Management**
-- Add new birds (breed, age, weight)  
-- Track growth progress  
-- Separate active, sold, and deceased birds  
-- Auto-generated stats
+### 📊 **2. Dashboard Overview**
+A clean, responsive dashboard showing:
+- Summary statistics (Total birds, vaccinated birds, deaths, feed usage, etc.)  
+- Charts & graphs (growth trends, vaccination progress, weekly plan completion)  
+- Quick shortcuts to major modules  
+- Activity logs for recent operations  
+- Uses state management to auto-refresh data in real time
 
 ---
 
-### **4. Feeding & Production Records**
-- Feeding logs (amount, cost, date)  
-- Egg production logs  
-- Automatic calculations  
-- Visual summaries
+### 🐤 **3. Breed Management**
+Allows farmers to manage different poultry breeds with:
+- Breed name  
+- Growth rate  
+- Maturity timelines  
+- Feed consumption patterns  
+- Eggs-per-cycle data  
+- Automatic syncing to breed-related operations (like vaccination variations)
 
 ---
 
-### **5. Expenses & Revenue Tracking**
-- Add expenses with category and cost  
-- Track income from egg sales or sold birds  
-- Financial summaries for decision-making
+### 💉 **4. Vaccination Module (New Feature Added)**
+This module enables precise health tracking with:
+- Vaccination name  
+- Type of vaccine  
+- Age administered  
+- Repeat frequency  
+- Next due date  
+- Manufacturer or batch (optional)  
+- Auto-reminders based on schedule  
+- Dashboard integration showing vaccination completion percentage
 
+Each vaccine record includes:
+
+```bash
+{
+  "id": String,
+  "name": String,
+  "interval": int,
+  "age": int
+}
+```
 ---
 
-## 🖥️ UI / UX Principles
+🗓️ 5. Weekly Plan System
 
-- Clean, minimal farmer-friendly interface  
-- High contrast + readable typography  
-- Intuitive page-to-page flow  
-- Consistent card components  
-- Mobile-first layout  
-- Clear icons and labels  
-- Zero-confusion navigation  
+Plan and track weekly farm routines:
+
+Feeding schedule
+
+Cleaning routines
+
+Vaccination reminders
+
+Weight monitoring
+
+Health check tasks
+
+Automatic completion status
+
+Weekly analytics report
+
+Each weekly task includes:
+
+```bash
+{
+  "id": String,
+  "weekNumber": int,
+  "plan": List<String>,
+  "isComplete": bool
+}
+```
+
+---🧠 State Management
+
+The system uses a clean and predictable state architecture:
+
+✔️ Controllers / Notifiers
+
+AuthController
+
+BreedController
+
+VaccinationController
+
+WeeklyPlanController
+
+DashboardController
+
+✔️ Responsibilities
+
+Handle logic outside UI
+
+Fetch & sync data from server
+
+Manage loading states
+
+Provide global reactive updates
+
+Prevent duplicated API calls
+
+Maintain clean separation of concerns
 
 ---
 
@@ -77,7 +140,7 @@ Designed for fast decision-making.
 
 This project follows **Clean Architecture**:
 
-```plaintext
+```
 lib/
 │
 ├── core/
@@ -103,28 +166,63 @@ lib/
     ├── eggs/
     ├── expenses/
     └── common_widgets/       # Shared UI elements
+```
+---
+🎯 API Service Highlights
+
+Centralized request handling
+
+Error-handled fetch, post, update, delete
+
+Token-injected headers
+
+Reusable endpoints
 
 ---
 
+🎯 Model Handling
+
+Each model includes:
+
+JSON serialization
+
+Validations
+
+Conversion helpers
+
+.g.dart generated files (via build_runner)
 
 ---
 
-## 🧠 State Management
+🎨 UI/UX Design Standards
 
-- Provider / Riverpod style structure  
-- Clear separation of `state`, `notifiers`, and `services`  
-- Consistent async state handling  
-- Error, loading, and success states implemented cleanly
+Clean responsive layout
 
----
+Consistent spacing, typography, and color theme
 
-## 🗃️ Data Layer
+User-friendly forms with validation
 
-- Local storage for offline capability  
-- Cloud-ready repo structure  
-- Typed models  
-- Safe JSON conversions  
-- Centralized repositories  
+High-contrast dashboard for readability
+
+Icons + intuitive navigation
+
+Lists, cards, modals, and structured pages
+
+Pages include:
+
+Login / Register
+
+Dashboard
+
+Breed Management
+
+Vaccination Management
+
+Weekly Plan Page
+
+Settings
+
+User Profile
 
 ---
 
@@ -145,10 +243,48 @@ lib/
 4. Add expense  
 5. Track eggs  
 6. Navigate through all pages  
-7. Refresh app → Ensure state persists  
+7. Refresh app → Ensure state persists
 
 ---
 
+Testing
+
+Unit tests for controllers
+
+JSON serialization tests
+
+API integration tests
+
+UI widget tests (optional)
+
+---
+
+🛠️ Installation & Setup
+
+1. Clone Repository
+```
+git clone <your-repo-url>
+cd leakuku
+```
+
+3. Install Dependencies
+```
+flutter pub get
+```
+5. Generate Model Files
+Must run whenever models change.
+```
+dart run build_runner build --delete-conflicting-outputs
+```
+
+Or auto-watch:
+```
+dart run build_runner watch --delete-conflicting-outputs
+```
+4. Run App
+```
+flutter run
+```
 
 ---
 
