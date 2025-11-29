@@ -142,30 +142,39 @@ This project follows **Clean Architecture**:
 
 ```
 lib/
-│
 ├── core/
-│   ├── di.dart               # Dependency Injection
-│   ├── error/                # Failure, exceptions
-│   └── utils/                # Helpers, constants
-│
+│   ├── di.dart                # Dependency Injection
+│   ├── error/                 # Failures, exceptions
+│   └── utils/                 # Helpers, constants
 ├── data/
-│   ├── models/               # Data models
-│   ├── sources/              # Remote & local data sources
-│   └── repositories/         # Repository implementations
-│
+│   ├── models/                # All data models
+│   │    ├── breed_model.dart
+│   │    ├── vaccine_model.dart
+│   │    ├── weekly_plan_model.dart
+│   ├── sources/               # Remote & local sources
+│   │    ├── api_service.dart
+│   │    └── local_storage.dart
+│   └── repositories/          # Implementations
+│        ├── breed_repository.dart
+│        ├── vaccine_repository.dart
+│        └── weekly_plan_repository.dart
 ├── domain/
-│   ├── entities/             # Core business entities
-│   ├── repositories/         # Abstract repos
-│   └── usecases/             # Business logic
-│
-└── features/
-    ├── auth/
-    ├── dashboard/
-    ├── flock/
-    ├── feeding/
-    ├── eggs/
-    ├── expenses/
-    └── common_widgets/       # Shared UI elements
+│   ├── entities/              # Core business entities
+│   ├── repositories/          # Abstract repositories
+│   └── usecases/              # Business logic
+├── features/                  # Feature-specific modules
+│   ├── auth/
+│   ├── dashboard/
+│   ├── flock/
+│   ├── feeding/
+│   ├── eggs/
+│   ├── expenses/
+│   └── common_widgets/        # Shared UI elements for features
+├── controllers/               # State management/controllers
+├── ui/                        # Screens/pages (optional if inside features)
+├── widgets/                   # Shared widgets (outside features)
+└── main.dart
+
 ```
 ---
 🎯 API Service Highlights
