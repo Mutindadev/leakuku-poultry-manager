@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:leakuku/core/services/notification_service.dart';
 import 'package:leakuku/data/models/user_model.dart';
-import 'package:leakuku/data/models/user_model_adapter.dart';
-
-import 'package:leakuku/features/auth/presentation/login_register_page.dart';
+import 'package:leakuku/data/models/breed_model.dart';
+import 'package:leakuku/data/models/vaccine_model.dart';
+import 'package:leakuku/data/models/weekly_plan_model.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/data/datasources/breed_local_data_source.dart';
+import 'package:leakuku/features/auth/presentation/login_register_page.dart';
 import 'package:leakuku/features/flock/presentation/dashboard_page.dart';
 import 'package:leakuku/features/flock/presentation/flock_page.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
@@ -16,21 +20,39 @@ import 'package:leakuku/features/reports/presentation/reports_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Hive.initFlutter();
+  // Initialize timezone database
+  tz.initializeTimeZones();
   
-  // Register adapters
+  // Initialize notifications
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register adapters (use generated classes, no casts)
   Hive.registerAdapter(UserModelAdapter());
   Hive.registerAdapter(FlockModelAdapter());
-  
+  Hive.registerAdapter(BreedModelAdapter());
+  Hive.registerAdapter(VaccineModelAdapter());
+  Hive.registerAdapter(WeeklyPlanModelAdapter());
+
   // Open boxes
   await Hive.openBox<UserModel>('userBox');
   await Hive.openBox<FlockModel>('flockBox');
+  final breedBox = await Hive.openBox<BreedModel>('breedBox');
+  await Hive.openBox<List<dynamic>>('vaccineBox');
+  await Hive.openBox<List<dynamic>>('weeklyPlanBox');
 
-  runApp(const ProviderScope(child: LeaKukuApp()));
+  // Seed default breeds
+  final breedDataSource = BreedLocalDataSourceImpl(breedBox: breedBox);
+  await breedDataSource.seedDefaultBreeds();
+
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class LeaKukuApp extends StatelessWidget {
-  const LeaKukuApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,18 +60,8 @@ class LeaKukuApp extends StatelessWidget {
       title: 'LeaKuku',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF4CAF50),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50),
-          primary: const Color(0xFF4CAF50),
-          secondary: const Color(0xFFFF9800),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        primarySwatch: Colors.green,
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF4CAF50),
-          foregroundColor: Colors.white,
-        ),
       ),
       initialRoute: '/',
       routes: {
