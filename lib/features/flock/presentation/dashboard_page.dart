@@ -9,6 +9,12 @@ import 'package:leakuku/features/reports/presentation/reports_page.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
+import 'package:leakuku/domain/usecases/generate_weekly_plan.dart';
+import 'package:leakuku/domain/usecases/generate_vaccine_schedule.dart';
+import 'package:leakuku/presentation/providers/breed_provider.dart';
+import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
+import 'package:leakuku/presentation/providers/vaccine_provider.dart';
+import 'package:leakuku/core/services/notification_service.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -678,14 +684,16 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
             ElevatedButton.icon(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  // Duplicate name check (case-insensitive) per user
                   final authState = ref.read(authProvider);
                   final userId = authState.user?.id ?? '';
                   final nameLower = _nameController.text.trim().toLowerCase();
+                  
+                  // Duplicate name check
                   final duplicate = allFlocks.any((f) =>
                       f.userId == userId &&
                       f.name.trim().toLowerCase() == nameLower &&
                       (widget.existing == null || f.id != widget.existing!.id));
+                  
                   if (duplicate) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -707,8 +715,55 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                   );
 
                   if (widget.existing == null) {
+                    // NEW FLOCK: Auto-generate weekly plans & vaccine schedule
                     await ref.read(flockProvider.notifier).addFlock(flock);
+                    
+                    // Get breed ID mapping
+                    final breedIdMap = {
+                      'Broilers': 'broilers',
+                      'Layers': 'layers',
+                      'Improved Kienyeji': 'kenbro',
+                    };
+                    final breedId = breedIdMap[flock.breed] ?? 'broilers';
+                    
+                    try {
+                      // Generate weekly plans
+                      final breedDataSource = ref.read(breedDataSourceProvider);
+                      final weeklyPlanDataSource = ref.read(weeklyPlanDataSourceProvider);
+                      final generateWeeklyPlanUseCase = GenerateWeeklyPlanUseCase(
+                        breedDataSource: breedDataSource,
+                        weeklyPlanDataSource: weeklyPlanDataSource,
+                      );
+                      
+                      await generateWeeklyPlanUseCase.execute(
+                        flockId: flock.id,
+                        breedId: breedId,
+                        flockQuantity: flock.quantity,
+                        flockStartDate: flock.purchaseDate,
+                      );
+                      
+                      print('✅ Generated weekly plans for flock ${flock.id}');
+                      
+                      // Generate vaccine schedule & notifications
+                      final vaccineDataSource = ref.read(vaccineDataSourceProvider);
+                      final notificationService = NotificationService();
+                      final generateVaccineScheduleUseCase = GenerateVaccineScheduleUseCase(
+                        vaccineDataSource: vaccineDataSource,
+                        notificationService: notificationService,
+                      );
+                      
+                      await generateVaccineScheduleUseCase.execute(
+                        flockId: flock.id,
+                        breedId: breedId,
+                        flockStartDate: flock.purchaseDate,
+                      );
+                      
+                      print('✅ Generated vaccine schedule for flock ${flock.id}');
+                    } catch (e) {
+                      debugPrint('⚠️ Error generating plans: $e');
+                    }
                   } else {
+                    // EXISTING FLOCK: Just update
                     await ref.read(flockProvider.notifier).updateFlock(flock);
                   }
 
@@ -722,7 +777,7 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                             Expanded(
                               child: Text(
                                 widget.existing == null
-                                    ? 'Flock "${flock.name}" added!'
+                                    ? 'Flock "${flock.name}" added with plans!'
                                     : 'Flock "${flock.name}" updated!',
                               ),
                             ),
