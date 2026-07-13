@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/core/services/feeding_calculator.dart';
 
@@ -14,7 +15,7 @@ class ReportsPage extends ConsumerWidget {
     final flocks = flockState.flocks;
 
     if (flockState.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF4CAF50)));
+      return const Center(child: CircularProgressIndicator(color: AppColors.leakukuGreen));
     }
 
     return SingleChildScrollView(
@@ -29,7 +30,7 @@ class ReportsPage extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _breedDistributionRow(context, '🥚 Layers', stats.layersCount, Colors.green),
+                  _breedDistributionRow(context, '🥚 Layers', stats.layersCount, AppColors.leakukuGreen),
                   const Divider(height: 24),
                   _breedDistributionRow(context, '🍗 Broilers', stats.broilersCount, Colors.deepOrange),
                   const Divider(height: 24),
@@ -44,7 +45,7 @@ class ReportsPage extends ConsumerWidget {
           if (flocks.isEmpty)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 child: Center(
                   child: Text(
                     'No flocks to analyze. Add flocks to see growth analytics.',
@@ -63,23 +64,23 @@ class ReportsPage extends ConsumerWidget {
               final progress = FeedingCalculator.getMaturityProgress(flock.breed, ageDays);
 
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 10),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(9),
                             decoration: BoxDecoration(
-                              color: _getBreedColor(flock.breed).withOpacity(0.15),
+                              color: _getBreedColor(flock.breed).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: _getBreedIcon(flock.breed),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +111,7 @@ class ReportsPage extends ConsumerWidget {
                         '${progress.toStringAsFixed(1)}% to maturity',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                       ),
-                      const Divider(height: 24),
+                      const Divider(height: 20),
                       // Growth Chart Placeholder
                       Container(
                         height: 120,
@@ -122,7 +123,7 @@ class ReportsPage extends ConsumerWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(FontAwesomeIcons.chartLine, color: _getBreedColor(flock.breed), size: 32),
+                              FaIcon(FontAwesomeIcons.chartLine, color: _getBreedColor(flock.breed), size: 32),
                               const SizedBox(height: 8),
                               Text(
                                 'Growth Chart',
@@ -181,7 +182,7 @@ class ReportsPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Text(
@@ -199,7 +200,7 @@ class ReportsPage extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
@@ -215,10 +216,10 @@ class ReportsPage extends ConsumerWidget {
     );
   }
 
-  Widget _metricChip(BuildContext context, String label, String value, IconData icon) {
+  Widget _metricChip(BuildContext context, String label, String value, FaIconData icon) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF4CAF50)),
+        FaIcon(icon, size: 20, color: AppColors.leakukuGreen),
         const SizedBox(height: 4),
         Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600])),
         Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -227,14 +228,14 @@ class ReportsPage extends ConsumerWidget {
   }
 
   Color _getBreedColor(String breed) {
-    if (breed.toLowerCase().contains('layer')) return Colors.green;
+    if (breed.toLowerCase().contains('layer')) return AppColors.leakukuGreen;
     if (breed.toLowerCase().contains('broiler')) return Colors.deepOrange;
     return Colors.brown;
   }
 
   Widget _getBreedIcon(String breed) {
     if (breed.toLowerCase().contains('layer')) {
-      return const Icon(FontAwesomeIcons.egg, color: Colors.green, size: 22);
+      return const FaIcon(FontAwesomeIcons.egg, color: AppColors.leakukuGreen, size: 22);
     } else if (breed.toLowerCase().contains('broiler')) {
       return const Text('🍗', style: TextStyle(fontSize: 22));
     } else {

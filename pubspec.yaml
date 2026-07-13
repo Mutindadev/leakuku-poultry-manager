@@ -23,12 +23,13 @@ dependencies:
   
   # Notifications
   flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.4
   
   # Charts
   fl_chart: ^0.68.0
   
   # Icons
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^11.0.0
   
   # Utility
   equatable: ^2.0.5

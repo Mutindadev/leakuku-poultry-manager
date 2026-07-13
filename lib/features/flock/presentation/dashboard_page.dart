@@ -9,12 +9,10 @@ import 'package:leakuku/features/reports/presentation/reports_page.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
-import 'package:leakuku/domain/usecases/generate_weekly_plan.dart';
-import 'package:leakuku/domain/usecases/generate_vaccine_schedule.dart';
-import 'package:leakuku/presentation/providers/breed_provider.dart';
-import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
-import 'package:leakuku/core/services/notification_service.dart';
+import 'package:leakuku/core/services/feeding_calculator.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
+import 'package:leakuku/features/flock/presentation/widgets/add_flock_dialog.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -38,261 +36,457 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _buildHomePage() {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final flockState = ref.watch(flockProvider);
+    final stats = ref.watch(flockStatsProvider);
+    final nextVaccination = _getNextVaccination(flockState.flocks);
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeBanner(user),
-          _buildQuickStats(),
-          _buildRecentActivity(),
-          _buildManageFlocksSection(), // NEW
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWelcomeBanner(User? user) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // Reduced from 24
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF4CAF50),
-            const Color(0xFF4CAF50).withOpacity(0.8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDashboardHeader(user),
+            const SizedBox(height: 14),
+            _buildSectionTitle('Farm Overview'),
+            const SizedBox(height: 10),
+            _buildFarmOverview(stats, flockState.flocks, nextVaccination),
+            const SizedBox(height: 16),
+            _buildSectionTitle('Today\'s Farm Plan'),
+            const SizedBox(height: 10),
+            _buildTodayFarmPlan(flockState.flocks, nextVaccination),
+            const SizedBox(height: 16),
+            _buildSectionTitle('Quick Actions'),
+            const SizedBox(height: 10),
+            _buildQuickActions(),
+            const SizedBox(height: 16),
+            _buildSectionTitle('Recent Activity'),
+            const SizedBox(height: 10),
+            _buildRecentActivitySection(),
           ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome back,',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white70,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            user?.name ?? 'Farmer',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              user?.role ?? 'Farmer',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
+    );
+  }
+
+  Widget _buildDashboardHeader(User? user) {
+    final name = user?.name.trim().isNotEmpty == true ? user!.name : 'Farmer';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Good Morning, $name 👋',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '🌱 Healthy habits build healthy birds.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildQuickStats() {
-    final flockState = ref.watch(flockProvider);
-
-    if (flockState.isLoading) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
-        ),
-      );
-    }
-
-    if (flockState.error != null && flockState.error!.isNotEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          color: Colors.red.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(FontAwesomeIcons.triangleExclamation,
-                    color: Colors.red, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Failed to load flock stats: ${flockState.error}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      ref.read(flockProvider.notifier).loadFlocks(),
-                  child: const Text('Retry'),
-                )
-              ],
-            ),
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
           ),
-        ),
-      );
-    }
-
-    // Use memoized stats provider instead of recalculating
-    final stats = ref.watch(flockStatsProvider);
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Stats',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  icon: FontAwesomeIcons.drumstickBite,
-                  title: 'Total Flocks',
-                  value: '${stats.totalFlocks}',
-                  color: const Color(0xFF4CAF50),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  icon: FontAwesomeIcons.hashtag,
-                  title: 'Chickens',
-                  value: '${stats.totalChickens}',
-                  color: Colors.teal,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  icon: FontAwesomeIcons.calendar,
-                  title: 'Avg Age',
-                  value: '${stats.avgAgeDays} days', // FIX: Changed from avgFlockSize
-                  color: Colors.indigo,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  icon: FontAwesomeIcons.chartLine,
-                  title: 'Growth',
-                  value: 'Active', // Placeholder
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _buildRecentActivity() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Activity',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+  Widget _buildFarmOverview(
+    FlockStats stats,
+    List<FlockModel> flocks,
+    _UpcomingVaccination? nextVaccination,
+  ) {
+    final totalDailyFeed = _calculateDailyFeed(flocks);
+
+    return GridView.count(
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.18,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _overviewCard(
+          icon: FontAwesomeIcons.drumstickBite,
+          title: 'Birds Alive',
+          value: '${stats.totalChickens}',
+          subtitle: stats.totalFlocks == 0
+              ? 'No data yet'
+              : 'Across ${stats.totalFlocks} flock${stats.totalFlocks == 1 ? '' : 's'}',
+          color: AppColors.leakukuGreen,
+        ),
+        _overviewCard(
+          icon: FontAwesomeIcons.syringe,
+          title: 'Vaccination Due',
+          value: nextVaccination?.dueLabel ?? '—',
+          subtitle: nextVaccination?.label ?? 'No data yet',
+          color: AppColors.harvestGold,
+        ),
+        _overviewCard(
+          icon: FontAwesomeIcons.bowlFood,
+          title: "Today's Feed",
+          value: flocks.isEmpty ? '—' : _formatFeed(totalDailyFeed),
+          subtitle: flocks.isEmpty ? 'No data yet' : 'Recommended for today',
+          color: AppColors.informationBlue,
+        ),
+        _overviewCard(
+          icon: FontAwesomeIcons.boxOpen,
+          title: 'Feed Stock',
+          value: '—',
+          subtitle: 'No data yet',
+          color: AppColors.softGray,
+        ),
+      ],
+    );
+  }
+
+  Widget _overviewCard({
+    required FaIconData icon,
+    required String title,
+    required String value,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: FaIcon(icon, color: color, size: 16),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    FontAwesomeIcons.clock,
-                    size: 48,
-                    color: Colors.grey.shade300,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.2,
+                                  color: color,
+                                ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   Text(
-                    'No activity yet',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Track feeding, weighing, and health checks here',
-                    textAlign: TextAlign.center,
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
+                          color: Colors.grey[600],
+                          height: 1.25,
                         ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
+  Widget _buildTodayFarmPlan(
+      List<FlockModel> flocks, _UpcomingVaccination? nextVaccination) {
+    final totalDailyFeed = _calculateDailyFeed(flocks);
+    final planItems = <_PlanItem>[
+      _PlanItem(
+        icon: FontAwesomeIcons.bowlFood,
+        title: 'Feed Birds',
+        subtitle: flocks.isEmpty
+            ? 'No data yet'
+            : 'Prepare ${_formatFeed(totalDailyFeed)} today',
+        color: AppColors.leakukuGreen,
+      ),
+      _PlanItem(
+        icon: FontAwesomeIcons.syringe,
+        title: 'Vaccinate Birds',
+        subtitle: nextVaccination == null
+            ? 'No data yet'
+            : '${nextVaccination.label} · ${nextVaccination.dueLabel}',
+        color: AppColors.harvestGold,
+      ),
+      _PlanItem(
+        icon: FontAwesomeIcons.droplet,
+        title: 'Check Water',
+        subtitle:
+            flocks.isEmpty ? 'No data yet' : 'Manual check for all drinkers',
+        color: AppColors.informationBlue,
+      ),
+      _PlanItem(
+        icon: FontAwesomeIcons.penToSquare,
+        title: 'Record Birds Lost',
+        subtitle:
+            flocks.isEmpty ? 'No data yet' : 'Update after morning rounds',
+        color: AppColors.softGray,
+      ),
+    ];
+
+    return Column(
+      children: planItems
+          .map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: FaIcon(item.icon, size: 16, color: item.color),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.subtitle,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    final actions = [
+      _QuickAction(
+        title: 'Add Birds',
+        icon: FontAwesomeIcons.drumstickBite,
+        onTap: () => _showAddFlockDialog(context),
+      ),
+      _QuickAction(
+        title: 'Daily Record',
+        icon: FontAwesomeIcons.noteSticky,
+        onTap: () {
+          setState(() {
+            _selectedIndex = 2;
+          });
+        },
+      ),
+      _QuickAction(
+        title: 'Feed Calculator',
+        icon: FontAwesomeIcons.calculator,
+        onTap: () {
+          setState(() {
+            _selectedIndex = 3;
+          });
+        },
+      ),
+      _QuickAction(
+        title: 'AI Assistant',
+        icon: FontAwesomeIcons.robot,
+        onTap: () => Navigator.pushNamed(context, '/notifications'),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth >= 700 ? 4 : 2;
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.35,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: actions
+              .map(
+                (action) => Material(
+                  color: Colors.white,
+                  elevation: 1,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: action.onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.leakukuGreen
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: FaIcon(action.icon,
+                                  size: 16, color: AppColors.leakukuGreen),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            action.title,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentActivitySection() {
+    final flockState = ref.watch(flockProvider);
+    final flocks = flockState.flocks;
+
+    if (flocks.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.softGray.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: FaIcon(FontAwesomeIcons.clock,
+                      size: 16, color: AppColors.softGray),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'No activity yet',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Activity history will appear here when records are added.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.leakukuGreen.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: const Center(
+                child: FaIcon(FontAwesomeIcons.clockRotateLeft,
+                    size: 16, color: AppColors.leakukuGreen),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Recent activity summary will appear here.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+              ),
             ),
           ],
         ),
@@ -300,98 +494,52 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
-  Widget _buildManageFlocksSection() {
-    final flockState = ref.watch(flockProvider);
-    final flocks = flockState.flocks;
-    if (flockState.isLoading) return const SizedBox();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'My Flocks',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          if (flocks.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(FontAwesomeIcons.drumstickBite, color: Color(0xFF4CAF50)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'No flocks added yet. Use "Add Flock" to create one.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...flocks.map((f) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFF4CAF50).withOpacity(0.1),
-                      child: f.breed.toLowerCase() == 'layers'
-                          ? const Icon(FontAwesomeIcons.egg, color: Color(0xFF4CAF50), size: 18)
-                          : f.breed.toLowerCase() == 'broilers'
-                              ? const Text('🍗', style: TextStyle(fontSize: 20)) // Chicken wing emoji
-                              : const Text('🐔', style: TextStyle(fontSize: 20)), // Chicken emoji for Kienyeji
-                    ),
-                    title: Text(f.name),
-                    subtitle: Text('${f.breed} • ${f.quantity} chickens'),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          _showAddFlockDialog(context, existing: f);
-                        } else if (value == 'delete') {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (c) => AlertDialog(
-                              title: const Text('Delete Flock'),
-                              content: Text('Are you sure you want to delete "${f.name}"?'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                  onPressed: () => Navigator.pop(c, true),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            await ref.read(flockProvider.notifier).deleteFlock(f.id);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Flock "${f.name}" deleted'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      itemBuilder: (c) => [
-                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    ),
-                  ),
-                )),
-        ],
-      ),
-    );
+  double _calculateDailyFeed(List<FlockModel> flocks) {
+    double totalGrams = 0;
+
+    for (final flock in flocks) {
+      final ageDays = DateTime.now().difference(flock.purchaseDate).inDays;
+      final perBird = FeedingCalculator.getDailyFoodGrams(flock.breed, ageDays);
+      totalGrams += perBird * flock.quantity;
+    }
+
+    return totalGrams;
+  }
+
+  String _formatFeed(double grams) {
+    if (grams >= 1000) {
+      return '${(grams / 1000).toStringAsFixed(1)} kg';
+    }
+    return '${grams.toStringAsFixed(0)} g';
+  }
+
+  _UpcomingVaccination? _getNextVaccination(List<FlockModel> flocks) {
+    final now = DateTime.now();
+    _UpcomingVaccination? next;
+
+    for (final flock in flocks) {
+      final scheduleAsync = ref.watch(vaccineScheduleProvider(flock.id));
+      scheduleAsync.whenData((vaccines) {
+        for (final vaccine in vaccines) {
+          final dueDate =
+              flock.purchaseDate.add(Duration(days: vaccine.scheduleDayOffset));
+          if (dueDate.isBefore(now)) {
+            continue;
+          }
+
+          final candidate = _UpcomingVaccination(
+            label: vaccine.vaccineName,
+            dueDate: dueDate,
+          );
+
+          if (next == null || dueDate.isBefore(next!.dueDate)) {
+            next = candidate;
+          }
+        }
+      });
+    }
+
+    return next;
   }
 
   void _showAddFlockDialog(BuildContext context, {FlockModel? existing}) {
@@ -405,9 +553,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final pages = [
       _buildHomePage(),
-      const FlockPage(),
-      const ProgressPage(),     
-      const ReportsPage(),     
+      const FlockPage(embedded: true),
+      const ProgressPage(),
+      const ReportsPage(),
       const ProfilePage(),
     ];
 
@@ -416,7 +564,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         title: Text(_getTitle(_selectedIndex)),
         actions: [
           IconButton(
-            icon: const Icon(FontAwesomeIcons.bell),
+            icon: const FaIcon(FontAwesomeIcons.bell),
             onPressed: () => Navigator.pushNamed(context, '/notifications'),
           ),
         ],
@@ -433,27 +581,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             _selectedIndex = index;
           });
         },
-        selectedItemColor: const Color(0xFF4CAF50),
+        selectedItemColor: AppColors.leakukuGreen,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(FontAwesomeIcons.house),
+            icon: FaIcon(FontAwesomeIcons.house),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(FontAwesomeIcons.drumstickBite),
-            label: 'Flocks',
+            icon: FaIcon(FontAwesomeIcons.drumstickBite),
+            label: 'Birds',
           ),
           BottomNavigationBarItem(
-            icon: Icon(FontAwesomeIcons.chartLine),
-            label: 'Progress',
+            icon: FaIcon(FontAwesomeIcons.chartLine),
+            label: 'Daily Records',
           ),
           BottomNavigationBarItem(
-            icon: Icon(FontAwesomeIcons.fileLines),
+            icon: FaIcon(FontAwesomeIcons.fileLines),
             label: 'Reports',
           ),
           BottomNavigationBarItem(
-            icon: Icon(FontAwesomeIcons.user),
+            icon: FaIcon(FontAwesomeIcons.user),
             label: 'Profile',
           ),
         ],
@@ -463,9 +611,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               onPressed: () {
                 _showAddFlockDialog(context);
               },
-              icon: const Icon(FontAwesomeIcons.plus),
-              label: const Text('Add Flock'),
-              backgroundColor: const Color(0xFF4CAF50),
+              icon: const FaIcon(FontAwesomeIcons.plus),
+              label: const Text('Add Birds'),
+              backgroundColor: AppColors.leakukuGreen,
             )
           : null,
     );
@@ -476,9 +624,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       case 0:
         return 'Dashboard';
       case 1:
-        return 'My Flocks';
+        return 'Birds';
       case 2:
-        return 'Progress Tracking';
+        return 'Daily Records';
       case 3:
         return 'Reports & Analytics';
       case 4:
@@ -489,320 +637,51 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 }
 
+class _PlanItem {
+  final FaIconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+
+  const _PlanItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
+}
+
+class _QuickAction {
+  final String title;
+  final FaIconData icon;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+}
+
+class _UpcomingVaccination {
+  final String label;
+  final DateTime dueDate;
+
+  const _UpcomingVaccination({
+    required this.label,
+    required this.dueDate,
+  });
+
+  String get dueLabel {
+    final remainingDays = dueDate.difference(DateTime.now()).inDays;
+    if (remainingDays <= 0) {
+      return 'Due today';
+    }
+    if (remainingDays == 1) {
+      return 'Due tomorrow';
+    }
+    return 'Due in $remainingDays days';
+  }
+}
+
 // UPDATED AddFlockDialog with edit & duplicate validation
-class AddFlockDialog extends StatefulWidget {
-  final FlockModel? existing;
-  const AddFlockDialog({super.key, this.existing});
-
-  @override
-  State<AddFlockDialog> createState() => _AddFlockDialogState();
-}
-
-class _AddFlockDialogState extends State<AddFlockDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _notesController = TextEditingController();
-  String _selectedBreed = 'Layers';
-  DateTime _purchaseDate = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    final f = widget.existing;
-    if (f != null) {
-      _nameController.text = f.name;
-      _quantityController.text = f.quantity.toString();
-      _selectedBreed = f.breed;
-      _purchaseDate = f.purchaseDate;
-      _notesController.text = f.notes ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _quantityController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _purchaseDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _purchaseDate) {
-      setState(() {
-        _purchaseDate = picked;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final allFlocks = ref.watch(flockProvider).flocks;
-        return AlertDialog(
-          title: Row(
-            children: [
-              const Icon(FontAwesomeIcons.drumstickBite, color: Color(0xFF4CAF50)),
-              const SizedBox(width: 12),
-              Text(widget.existing == null ? 'Add New Flock' : 'Edit Flock'),
-            ],
-          ),
-          content: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Flock Name',
-                      prefixIcon: const Icon(FontAwesomeIcons.tag),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter flock name';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _selectedBreed,
-                    decoration: InputDecoration(
-                      labelText: 'Breed Type',
-                      prefixIcon: const Icon(FontAwesomeIcons.dna, color: Color(0xFF4CAF50)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'Layers',
-                        child: Row(
-                          children: [
-                            Icon(FontAwesomeIcons.egg, size: 20, color: Color(0xFF4CAF50)),
-                            SizedBox(width: 12),
-                            Text('Layers', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 8),
-                            Text('(Egg Production)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Broilers',
-                        child: Row(
-                          children: [
-                            Text('🍗', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Broilers', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 8),
-                            Text('(Meat)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Improved Kienyeji',
-                        child: Row(
-                          children: [
-                            Text('🐔', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Improved Kienyeji', style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedBreed = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _quantityController,
-                    decoration: InputDecoration(
-                      labelText: 'Number of Chickens',
-                      prefixIcon: const Icon(FontAwesomeIcons.hashtag),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      helperText: 'How many chickens in this flock?',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter quantity';
-                      }
-                      if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                        return 'Please enter a valid number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Purchase Date'),
-                    subtitle: Text(
-                      '${_purchaseDate.day}/${_purchaseDate.month}/${_purchaseDate.year}',
-                      style: const TextStyle(color: Color(0xFF4CAF50), fontWeight: FontWeight.bold),
-                    ),
-                    leading: const Icon(FontAwesomeIcons.calendar, color: Color(0xFF4CAF50)),
-                    trailing: const Icon(Icons.edit),
-                    onTap: () => _selectDate(context),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: InputDecoration(
-                      labelText: 'Notes (Optional)',
-                      prefixIcon: const Icon(FontAwesomeIcons.noteSticky),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      helperText: 'Any additional information',
-                    ),
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton.icon(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  final authState = ref.read(authProvider);
-                  final userId = authState.user?.id ?? '';
-                  final nameLower = _nameController.text.trim().toLowerCase();
-                  
-                  // Duplicate name check
-                  final duplicate = allFlocks.any((f) =>
-                      f.userId == userId &&
-                      f.name.trim().toLowerCase() == nameLower &&
-                      (widget.existing == null || f.id != widget.existing!.id));
-                  
-                  if (duplicate) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('A flock with this name already exists'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return;
-                  }
-
-                  final flock = FlockModel(
-                    id: widget.existing?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: _nameController.text.trim(),
-                    breed: _selectedBreed,
-                    quantity: int.parse(_quantityController.text.trim()),
-                    purchaseDate: _purchaseDate,
-                    notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-                    userId: userId,
-                  );
-
-                  if (widget.existing == null) {
-                    // NEW FLOCK: Auto-generate weekly plans & vaccine schedule
-                    await ref.read(flockProvider.notifier).addFlock(flock);
-                    
-                    // Get breed ID mapping
-                    final breedIdMap = {
-                      'Broilers': 'broilers',
-                      'Layers': 'layers',
-                      'Improved Kienyeji': 'kenbro',
-                    };
-                    final breedId = breedIdMap[flock.breed] ?? 'broilers';
-                    
-                    try {
-                      // Generate weekly plans
-                      final breedDataSource = ref.read(breedDataSourceProvider);
-                      final weeklyPlanDataSource = ref.read(weeklyPlanDataSourceProvider);
-                      final generateWeeklyPlanUseCase = GenerateWeeklyPlanUseCase(
-                        breedDataSource: breedDataSource,
-                        weeklyPlanDataSource: weeklyPlanDataSource,
-                      );
-                      
-                      await generateWeeklyPlanUseCase.execute(
-                        flockId: flock.id,
-                        breedId: breedId,
-                        flockQuantity: flock.quantity,
-                        flockStartDate: flock.purchaseDate,
-                      );
-                      
-                      print('✅ Generated weekly plans for flock ${flock.id}');
-                      
-                      // Generate vaccine schedule & notifications
-                      final vaccineDataSource = ref.read(vaccineDataSourceProvider);
-                      final notificationService = NotificationService();
-                      final generateVaccineScheduleUseCase = GenerateVaccineScheduleUseCase(
-                        vaccineDataSource: vaccineDataSource,
-                        notificationService: notificationService,
-                      );
-                      
-                      await generateVaccineScheduleUseCase.execute(
-                        flockId: flock.id,
-                        breedId: breedId,
-                        flockStartDate: flock.purchaseDate,
-                      );
-                      
-                      print('✅ Generated vaccine schedule for flock ${flock.id}');
-                    } catch (e) {
-                      debugPrint('⚠️ Error generating plans: $e');
-                    }
-                  } else {
-                    // EXISTING FLOCK: Just update
-                    await ref.read(flockProvider.notifier).updateFlock(flock);
-                  }
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            const Icon(FontAwesomeIcons.checkCircle, color: Colors.white),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                widget.existing == null
-                                    ? 'Flock "${flock.name}" added with plans!'
-                                    : 'Flock "${flock.name}" updated!',
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: const Color(0xFF4CAF50),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  }
-                }
-              },
-              icon: Icon(widget.existing == null ? FontAwesomeIcons.plus : FontAwesomeIcons.floppyDisk),
-              label: Text(widget.existing == null ? 'Add Flock' : 'Save Changes'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
