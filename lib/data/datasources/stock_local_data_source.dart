@@ -12,10 +12,12 @@ abstract class StockLocalDataSource {
     required String itemName,
     required double quantity,
     required String unit,
+    double? minimumLevel,
     required DateTime date,
     String? supplier,
     double? cost,
     DateTime? expiryDate,
+    String? notes,
   });
   Future<void> useStock({
     required String itemId,
@@ -37,146 +39,8 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
 
   @override
   Future<void> seedDefaultStock() async {
-    if (_stockItemBox.isNotEmpty) {
-      return;
-    }
-
-    final now = DateTime.now();
-    final defaults = <StockItemModel>[
-      StockItemModel(
-        id: 'feed_starter_mash',
-        category: 'Feed',
-        name: 'Starter Mash',
-        quantity: 18,
-        unit: 'Bags',
-        minimumLevel: 8,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'feed_grower_mash',
-        category: 'Feed',
-        name: 'Grower Mash',
-        quantity: 9,
-        unit: 'Bags',
-        minimumLevel: 8,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'feed_finisher_mash',
-        category: 'Feed',
-        name: 'Finisher Mash',
-        quantity: 6,
-        unit: 'Bags',
-        minimumLevel: 6,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'vaccine_lasota',
-        category: 'Vaccines',
-        name: 'Lasota',
-        quantity: 12,
-        unit: 'Doses',
-        minimumLevel: 8,
-        expiryDate: now.add(const Duration(days: 90)),
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'vaccine_gumboro',
-        category: 'Vaccines',
-        name: 'Gumboro',
-        quantity: 5,
-        unit: 'Doses',
-        minimumLevel: 6,
-        expiryDate: now.add(const Duration(days: 75)),
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'vaccine_newcastle',
-        category: 'Vaccines',
-        name: 'Newcastle',
-        quantity: 10,
-        unit: 'Doses',
-        minimumLevel: 6,
-        expiryDate: now.add(const Duration(days: 120)),
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'medicine_amprolium',
-        category: 'Medicines',
-        name: 'Amprolium',
-        quantity: 3,
-        unit: 'Bottles',
-        minimumLevel: 2,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'medicine_vitamin_mix',
-        category: 'Medicines',
-        name: 'Vitamin Mix',
-        quantity: 6,
-        unit: 'Packets',
-        minimumLevel: 3,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'medicine_disinfectant',
-        category: 'Medicines',
-        name: 'Disinfectant',
-        quantity: 2,
-        unit: 'Bottles',
-        minimumLevel: 2,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'supply_feeders',
-        category: 'Farm Supplies',
-        name: 'Feeders',
-        quantity: 22,
-        unit: 'Pieces',
-        minimumLevel: 10,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'supply_drinkers',
-        category: 'Farm Supplies',
-        name: 'Drinkers',
-        quantity: 18,
-        unit: 'Pieces',
-        minimumLevel: 8,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'supply_brooders',
-        category: 'Farm Supplies',
-        name: 'Brooders',
-        quantity: 4,
-        unit: 'Pieces',
-        minimumLevel: 2,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'supply_wood_shavings',
-        category: 'Farm Supplies',
-        name: 'Wood Shavings',
-        quantity: 14,
-        unit: 'Bags',
-        minimumLevel: 7,
-        lastUpdated: now,
-      ),
-      StockItemModel(
-        id: 'supply_syringes',
-        category: 'Farm Supplies',
-        name: 'Syringes',
-        quantity: 40,
-        unit: 'Pieces',
-        minimumLevel: 15,
-        lastUpdated: now,
-      ),
-    ];
-
-    for (final item in defaults) {
-      await _stockItemBox.put(item.id, item);
-    }
+    // Intentionally left empty: stock starts from user-managed inventory only.
+    return;
   }
 
   @override
@@ -216,10 +80,12 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
     required String itemName,
     required double quantity,
     required String unit,
+    double? minimumLevel,
     required DateTime date,
     String? supplier,
     double? cost,
     DateTime? expiryDate,
+    String? notes,
   }) async {
     if (quantity <= 0) {
       throw Exception('Quantity must be greater than zero.');
@@ -235,7 +101,7 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
         name: itemName,
         quantity: 0,
         unit: unit,
-        minimumLevel: _defaultMinimumLevel(category, unit),
+        minimumLevel: minimumLevel ?? _defaultMinimumLevel(category, unit),
         lastUpdated: date,
       ),
     );
@@ -251,8 +117,10 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
       name: itemName,
       quantity: currentQuantity + quantity,
       unit: unit,
-      minimumLevel:
-          existing.id.isEmpty ? _defaultMinimumLevel(category, unit) : existing.minimumLevel,
+      minimumLevel: minimumLevel ??
+          (existing.id.isEmpty
+              ? _defaultMinimumLevel(category, unit)
+              : existing.minimumLevel),
       lastUpdated: date,
       expiryDate: expiryDate ?? existing.expiryDate,
       supplier: supplier ?? existing.supplier,
@@ -271,6 +139,7 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
         unit: updatedItem.unit,
         date: date,
         balanceAfter: updatedItem.quantity,
+        notes: notes,
       ),
     );
   }
@@ -349,6 +218,10 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
   }
 
   String _slug(String value) {
-    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'_+'), '_').replaceAll(RegExp(r'^_|_$'), '');
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 }

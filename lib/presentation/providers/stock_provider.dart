@@ -15,11 +15,11 @@ final stockLocalDataSourceProvider = Provider<StockLocalDataSource>((ref) {
 
 final stockItemsProvider = FutureProvider<List<StockItemModel>>((ref) async {
   final dataSource = ref.read(stockLocalDataSourceProvider);
-  await dataSource.seedDefaultStock();
   return dataSource.getAllItems();
 });
 
-final stockHistoryProvider = FutureProvider.family<List<StockHistoryModel>, String>((ref, itemId) async {
+final stockHistoryProvider =
+    FutureProvider.family<List<StockHistoryModel>, String>((ref, itemId) async {
   final dataSource = ref.read(stockLocalDataSourceProvider);
   return dataSource.getItemHistory(itemId);
 });
@@ -38,20 +38,24 @@ class StockController {
     required String itemName,
     required double quantity,
     required String unit,
+    double? minimumLevel,
     required DateTime date,
     String? supplier,
     double? cost,
     DateTime? expiryDate,
+    String? notes,
   }) async {
     await ref.read(stockLocalDataSourceProvider).addStock(
           category: category,
           itemName: itemName,
           quantity: quantity,
           unit: unit,
+          minimumLevel: minimumLevel,
           date: date,
           supplier: supplier,
           cost: cost,
           expiryDate: expiryDate,
+          notes: notes,
         );
     ref.invalidate(stockItemsProvider);
   }

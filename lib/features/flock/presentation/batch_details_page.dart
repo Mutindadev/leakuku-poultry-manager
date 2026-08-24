@@ -24,6 +24,21 @@ class BatchDetailsPage extends ConsumerWidget {
       backgroundColor: AppColors.farmCream,
       appBar: AppBar(
         title: const Text('Batch Details'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pushNamed(context, '/stock'),
+            icon: const Icon(
+              Icons.inventory_2_outlined,
+              color: Colors.white,
+              size: 18,
+            ),
+            label: const Text(
+              'View Stock',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

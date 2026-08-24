@@ -41,6 +41,10 @@ dependencies:
   shared_preferences: ^2.2.2  # For persistent login
   connectivity_plus: ^5.0.2  # Check internet connection
   flutter_secure_storage: ^9.0.0  # Secure storage for tokens
+  pdf: ^3.11.1
+  excel: ^2.1.0
+  path_provider: ^2.1.5
+  share_plus: ^10.0.2
 
 dev_dependencies:
   flutter_test:
