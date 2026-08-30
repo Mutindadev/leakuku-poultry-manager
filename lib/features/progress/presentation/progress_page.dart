@@ -32,6 +32,12 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
   String? _loadedDraftKey;
   bool _isSaving = false;
 
+  late FlockModel _currentFlock;
+  WeeklyPlanModel? _currentPlan;
+  int _currentWeek = 1;
+  int _completedTasks = 0;
+  int _totalTasks = 0;
+
   @override
   void initState() {
     super.initState();
@@ -108,6 +114,12 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
     final taskState = _taskStateByFlock[flock.id] ?? const <String, bool>{};
     final completedTasks = taskState.values.where((value) => value).length;
 
+    _currentFlock = flock;
+    _currentPlan = currentPlan;
+    _currentWeek = currentWeek;
+    _completedTasks = completedTasks;
+    _totalTasks = tasks.length;
+
     final body = Container(
       color: AppColors.farmCream,
       child: Column(
@@ -138,14 +150,6 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
               ],
             ),
           ),
-          _buildSaveBar(
-            context,
-            flock: flock,
-            currentPlan: currentPlan,
-            currentWeek: currentWeek,
-            completedTasks: completedTasks,
-            totalTasks: tasks.length,
-          ),
         ],
       ),
     );
@@ -154,15 +158,39 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
   }
 
   Widget _wrapPage(BuildContext context, {required Widget body}) {
-    if (widget.showAppBar) {
-      return Scaffold(
-        backgroundColor: AppColors.farmCream,
-        appBar: AppBar(title: const Text('Daily Records')),
-        body: body,
-      );
-    }
-
-    return body;
+    return Scaffold(
+      backgroundColor: AppColors.farmCream,
+      appBar:
+          widget.showAppBar ? AppBar(title: const Text('Daily Records')) : null,
+      body: body,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isSaving
+            ? null
+            : () => _saveRecord(
+                  context,
+                  flock: _currentFlock,
+                  currentPlan: _currentPlan,
+                  currentWeek: _currentWeek,
+                  completedTasks: _completedTasks,
+                  totalTasks: _totalTasks,
+                ),
+        backgroundColor: AppColors.leakukuGreen,
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : null,
+        label: _isSaving
+            ? const SizedBox.shrink()
+            : const Text('Save Today\'s Record'),
+      ),
+    );
   }
 
   Widget _buildHeaderCard(
