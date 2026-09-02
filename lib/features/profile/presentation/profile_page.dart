@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/presentation/providers/auth_provider.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/domain/entities/user.dart';
@@ -31,12 +32,12 @@ class ProfilePage extends ConsumerWidget {
           // Profile Header (COMPACT) with Edit Icon
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF4CAF50),
-                  const Color(0xFF4CAF50).withOpacity(0.8),
+                  AppColors.leakukuGreen,
+                  AppColors.leakukuGreen.withValues(alpha: 0.8),
                 ],
               ),
             ),
@@ -52,7 +53,7 @@ class ProfilePage extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50),
+                          color: AppColors.leakukuGreen,
                         ),
                       ),
                     ),
@@ -115,7 +116,7 @@ class ProfilePage extends ConsumerWidget {
                         icon: FontAwesomeIcons.drumstickBite,
                         title: 'Total Flocks',
                         value: '${stats.totalFlocks}',
-                        color: const Color(0xFF4CAF50),
+                        color: AppColors.leakukuGreen,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -175,7 +176,7 @@ class ProfilePage extends ConsumerWidget {
                     }
                   }
                 },
-                icon: const Icon(FontAwesomeIcons.rightFromBracket),
+                icon: const FaIcon(FontAwesomeIcons.rightFromBracket),
                 label: const Text('LOGOUT'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -196,17 +197,17 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildStatCard(BuildContext context, {
-    required IconData icon,
+    required FaIconData icon,
     required String title,
     required String value,
     required Color color,
   }) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
+            FaIcon(icon, color: color, size: 32),
             const SizedBox(height: 8),
             Text(
               title,
@@ -268,13 +269,13 @@ class ProfilePage extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Profile updated successfully'),
-                  backgroundColor: Color(0xFF4CAF50),
+                  backgroundColor: AppColors.leakukuGreen,
                 ),
               );
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4CAF50),
+              backgroundColor: AppColors.leakukuGreen,
             ),
             child: const Text('Save'),
           ),

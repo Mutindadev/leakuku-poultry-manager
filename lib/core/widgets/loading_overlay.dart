@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -19,7 +20,7 @@ class LoadingOverlay extends StatelessWidget {
         child,
         if (isLoading)
           Container(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             child: Center(
               child: Card(
                 child: Padding(
@@ -28,7 +29,7 @@ class LoadingOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.leakukuGreen),
                       ),
                       if (message != null) ...[
                         const SizedBox(height: 16),

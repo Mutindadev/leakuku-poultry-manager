@@ -37,10 +37,10 @@ class FlockNotifier extends StateNotifier<FlockState> {
     try {
       final authState = ref.read(authProvider);
       final userId = authState.user?.id ?? '';
-      
+
       final dataSource = ref.read(flockLocalDataSourceProvider);
       final flocks = await dataSource.getAllFlocks(userId);
-      
+
       state = state.copyWith(flocks: flocks, isLoading: false);
     } catch (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
@@ -82,16 +82,44 @@ final flockProvider = StateNotifierProvider<FlockNotifier, FlockState>((ref) {
   return FlockNotifier(ref);
 });
 
+final selectedFlockIdProvider = StateProvider<String?>((ref) => null);
+
+final selectedFlockProvider = Provider<FlockModel?>((ref) {
+  final flocks = ref.watch(flockProvider).flocks;
+  if (flocks.isEmpty) {
+    return null;
+  }
+
+  final selectedId = ref.watch(selectedFlockIdProvider);
+  if (selectedId == null) {
+    return flocks.first;
+  }
+
+  for (final flock in flocks) {
+    if (flock.id == selectedId) {
+      return flock;
+    }
+  }
+
+  return flocks.first;
+});
+
 // Memoized selectors for performance
 final flockStatsProvider = Provider<FlockStats>((ref) {
   final flocks = ref.watch(flockProvider).flocks;
-  
+
   final totalFlocks = flocks.length;
   final totalChickens = flocks.fold<int>(0, (s, f) => s + f.quantity);
-  final layers = flocks.where((f) => f.breed.toLowerCase() == 'layers').fold<int>(0, (s, f) => s + f.quantity);
-  final broilers = flocks.where((f) => f.breed.toLowerCase() == 'broilers').fold<int>(0, (s, f) => s + f.quantity);
-  final kienyeji = flocks.where((f) => f.breed.toLowerCase().contains('kienye')).fold<int>(0, (s, f) => s + f.quantity);
-  
+  final layers = flocks
+      .where((f) => f.breed.toLowerCase() == 'layers')
+      .fold<int>(0, (s, f) => s + f.quantity);
+  final broilers = flocks
+      .where((f) => f.breed.toLowerCase() == 'broilers')
+      .fold<int>(0, (s, f) => s + f.quantity);
+  final kienyeji = flocks
+      .where((f) => f.breed.toLowerCase().contains('kienye'))
+      .fold<int>(0, (s, f) => s + f.quantity);
+
   // Calculate average age in days
   int avgAgeDays = 0;
   if (flocks.isNotEmpty) {
@@ -101,7 +129,7 @@ final flockStatsProvider = Provider<FlockStats>((ref) {
     });
     avgAgeDays = (totalDays / flocks.length).round();
   }
-  
+
   return FlockStats(
     totalFlocks: totalFlocks,
     totalChickens: totalChickens,

@@ -7,15 +7,21 @@ import 'package:leakuku/data/models/user_model.dart';
 import 'package:leakuku/data/models/breed_model.dart';
 import 'package:leakuku/data/models/vaccine_model.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
+import 'package:leakuku/data/models/stock_item_model.dart';
+import 'package:leakuku/data/models/stock_history_model.dart';
+import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
 import 'package:leakuku/data/datasources/breed_local_data_source.dart';
 import 'package:leakuku/features/auth/presentation/login_register_page.dart';
+import 'package:leakuku/features/finances/presentation/farm_finances_page.dart';
 import 'package:leakuku/features/flock/presentation/dashboard_page.dart';
 import 'package:leakuku/features/flock/presentation/flock_page.dart';
+import 'package:leakuku/features/stock/presentation/stock_page.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/notifications/presentation/notifications_page.dart';
 import 'package:leakuku/features/progress/presentation/progress_page.dart';
 import 'package:leakuku/features/reports/presentation/reports_page.dart';
+import 'package:leakuku/core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +42,9 @@ void main() async {
   Hive.registerAdapter(BreedModelAdapter());
   Hive.registerAdapter(VaccineModelAdapter());
   Hive.registerAdapter(WeeklyPlanModelAdapter());
+  Hive.registerAdapter(StockItemModelAdapter());
+  Hive.registerAdapter(StockHistoryModelAdapter());
+  Hive.registerAdapter(FinancialTransactionModelAdapter());
 
   // Open boxes
   await Hive.openBox<UserModel>('userBox');
@@ -43,6 +52,9 @@ void main() async {
   final breedBox = await Hive.openBox<BreedModel>('breedBox');
   await Hive.openBox<List<dynamic>>('vaccineBox');
   await Hive.openBox<List<dynamic>>('weeklyPlanBox');
+  await Hive.openBox<StockItemModel>('stockItemBox');
+  await Hive.openBox<List<dynamic>>('stockHistoryBox');
+  await Hive.openBox<FinancialTransactionModel>('farmFinanceTransactionBox');
 
   // Seed default breeds
   final breedDataSource = BreedLocalDataSourceImpl(breedBox: breedBox);
@@ -59,10 +71,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LeaKuku',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginRegisterPage(),
@@ -72,6 +81,8 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationsPage(),
         '/progress': (context) => const ProgressPage(showAppBar: true),
         '/reports': (context) => const ReportsPage(),
+        '/stock': (context) => const StockPage(),
+        '/farm-finances': (context) => const FarmFinancesPage(),
       },
     );
   }

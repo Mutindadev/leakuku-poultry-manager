@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 
 class AppErrorWidget extends StatelessWidget {
   final String message;
@@ -19,7 +20,7 @@ class AppErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            const FaIcon(
               FontAwesomeIcons.triangleExclamation,
               size: 64,
               color: Colors.red,
@@ -43,10 +44,10 @@ class AppErrorWidget extends StatelessWidget {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(FontAwesomeIcons.arrowRotateRight),
+                icon: const FaIcon(FontAwesomeIcons.arrowRotateRight),
                 label: const Text('Try Again'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4CAF50),
+                  backgroundColor: AppColors.leakukuGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
