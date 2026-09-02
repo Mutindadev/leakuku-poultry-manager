@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 
 class AppLoadingWidget extends StatelessWidget {
   final String? message;
@@ -12,7 +13,7 @@ class AppLoadingWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.leakukuGreen),
           ),
           if (message != null) ...[
             const SizedBox(height: 16),

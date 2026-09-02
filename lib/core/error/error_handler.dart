@@ -1,14 +1,18 @@
 import 'package:flutter/foundation.dart';
 
+typedef CrashReporter = void Function(Object error, StackTrace? stackTrace);
+
 class ErrorHandler {
+  static CrashReporter? _crashReporter;
+
+  static void setCrashReporter(CrashReporter reporter) {
+    _crashReporter = reporter;
+  }
+
   static void initialize() {
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
-      if (kReleaseMode) {
-        // TODO: Send to crash reporting service (Firebase Crashlytics, Sentry, etc.)
-        debugPrint('Error: ${details.exception}');
-        debugPrint('Stack trace: ${details.stack}');
-      }
+      logError(details.exception, details.stack);
     };
   }
 
@@ -19,6 +23,17 @@ class ErrorHandler {
         debugPrint('Stack trace: $stackTrace');
       }
     }
-    // TODO: Send to analytics/crash reporting
+
+    if (_crashReporter != null) {
+      _crashReporter!(error, stackTrace);
+      return;
+    }
+
+    if (kReleaseMode) {
+      debugPrint('Release error: $error');
+      if (stackTrace != null) {
+        debugPrint('Release stack trace: $stackTrace');
+      }
+    }
   }
 }

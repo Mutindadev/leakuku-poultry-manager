@@ -4,8 +4,8 @@ import 'package:leakuku/data/models/vaccine_model.dart'; // Updated import
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final Map<String, Set<int>> _flockNotificationIds = <String, Set<int>>{};
 
-  // TODO: Initialize in main.dart with platform-specific settings
   Future<void> initialize() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
@@ -25,6 +25,8 @@ class NotificationService {
     // Notification ID = hash of flockId + vaccine.id + offset
     final reminderIdBefore = '${flockId}_${vaccine.id}_before'.hashCode;
     final reminderIdDay = '${flockId}_${vaccine.id}_day'.hashCode;
+    _trackNotificationId(flockId, reminderIdBefore);
+    _trackNotificationId(flockId, reminderIdDay);
 
     // Schedule 1 day before
     await _notificationsPlugin.zonedSchedule(
@@ -67,8 +69,20 @@ class NotificationService {
 
   /// Cancel all reminders for a flock (when flock deleted or date changed)
   Future<void> cancelFlockReminders(String flockId) async {
-    // TODO: Track notification IDs in Hive, iterate and cancel
-    await _notificationsPlugin.cancelAll();
+    final ids = _flockNotificationIds[flockId];
+    if (ids == null || ids.isEmpty) {
+      return;
+    }
+
+    for (final id in ids) {
+      await _notificationsPlugin.cancel(id);
+    }
+
+    _flockNotificationIds.remove(flockId);
+  }
+
+  void _trackNotificationId(String flockId, int notificationId) {
+    _flockNotificationIds.putIfAbsent(flockId, () => <int>{}).add(notificationId);
   }
 
   // Helper: Format date (requires intl package)

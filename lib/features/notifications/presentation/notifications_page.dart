@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/core/services/feeding_calculator.dart';
 
@@ -23,7 +24,7 @@ class NotificationsPage extends ConsumerWidget {
       notifications.add({
         'type': 'feeding',
         'icon': FontAwesomeIcons.bowlFood,
-        'color': const Color(0xFF4CAF50),
+        'color': AppColors.leakukuGreen,
         'title': 'Feeding Time - ${flock.name}',
         'message': 'Feed ${dailyFood.toStringAsFixed(0)}g per chicken today',
         'time': '2h ago',
@@ -75,7 +76,7 @@ class NotificationsPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(FontAwesomeIcons.bell, size: 64, color: Colors.grey.shade300),
+                  FaIcon(FontAwesomeIcons.bell, size: 64, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
                   Text(
                     'No notifications yet',
@@ -94,17 +95,19 @@ class NotificationsPage extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final notif = notifications[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  color: notif['isRead'] ? Colors.white : const Color(0xFFF1F8E9),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                  color: notif['isRead'] ? Colors.white : AppColors.leakukuGreen.withValues(alpha: 0.08),
                   child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    minVerticalPadding: 4,
                     leading: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: (notif['color'] as Color).withOpacity(0.15),
+                        color: (notif['color'] as Color).withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        notif['icon'] as IconData,
+                      child: FaIcon(
+                        notif['icon'] as FaIconData,
                         color: notif['color'] as Color,
                         size: 20,
                       ),
@@ -120,7 +123,7 @@ class NotificationsPage extends ConsumerWidget {
                       children: [
                         const SizedBox(height: 4),
                         Text(notif['message'] as String),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           notif['time'] as String,
                           style: TextStyle(fontSize: 12, color: Colors.grey[600]),

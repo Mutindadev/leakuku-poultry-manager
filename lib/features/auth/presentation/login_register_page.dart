@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/presentation/providers/auth_provider.dart';
 
 class LoginRegisterPage extends ConsumerStatefulWidget {
@@ -105,24 +106,24 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.farmCream,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Card(
-            elevation: 8.0,
+            elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    const FaIcon(
                       FontAwesomeIcons.drumstickBite,
                       size: 60,
-                      color: Color(0xFF4CAF50),
+                      color: AppColors.leakukuGreen,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -139,7 +140,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                         decoration: _inputDecoration('Name', FontAwesomeIcons.user),
                         validator: _validateName,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                     ],
                     TextFormField(
                       controller: _emailController,
@@ -147,16 +148,16 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                       decoration: _inputDecoration('Email', FontAwesomeIcons.envelope),
                       validator: _validateEmail,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: _inputDecoration('Password', FontAwesomeIcons.lock).copyWith(
                         suffixIcon: IconButton(
-                          icon: Icon(
+                          icon: FaIcon(
                             _obscurePassword ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
                             size: 20,
-                            color: const Color(0xFF4CAF50),
+                            color: AppColors.leakukuGreen,
                           ),
                           onPressed: () {
                             setState(() {
@@ -168,7 +169,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                       validator: _validatePassword,
                     ),
                     if (!_isLogin) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         initialValue: _role, // Changed from value
                         decoration: _inputDecoration('Role', FontAwesomeIcons.userTag),
@@ -182,7 +183,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                         },
                       ),
                     ],
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -206,8 +207,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                                 }
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppColors.leakukuGreen,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: authState.isLoading
@@ -241,10 +241,10 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
+  InputDecoration _inputDecoration(String label, FaIconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
+      prefixIcon: FaIcon(icon, color: AppColors.leakukuGreen),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
