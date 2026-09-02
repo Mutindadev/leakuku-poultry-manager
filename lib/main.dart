@@ -13,7 +13,7 @@ import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
 import 'package:leakuku/data/datasources/breed_local_data_source.dart';
 import 'package:leakuku/features/auth/presentation/login_register_page.dart';
-import 'package:leakuku/features/finances/presentation/farm_finances_page.dart';
+import 'package:leakuku/features/finances/presentation/pages/farm_finances_page.dart';
 import 'package:leakuku/features/flock/presentation/dashboard_page.dart';
 import 'package:leakuku/features/flock/presentation/flock_page.dart';
 import 'package:leakuku/features/stock/presentation/stock_page.dart';
@@ -25,10 +25,10 @@ import 'package:leakuku/core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize timezone database
   tz.initializeTimeZones();
-  
+
   // Initialize notifications
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -87,4 +87,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
