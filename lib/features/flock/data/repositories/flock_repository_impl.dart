@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:leakuku/core/error/failures.dart';
 import 'package:leakuku/domain/repositories/flock_repository.dart';
-import 'package:leakuku/features/flock/data/flock_local_data_source.dart';
+import 'package:leakuku/features/flock/data/data_sources/flock_local_data_source.dart';
 import 'package:leakuku/features/flock/domain/entities/flock.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
 
