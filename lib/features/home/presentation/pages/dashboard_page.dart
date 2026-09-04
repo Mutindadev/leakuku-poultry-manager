@@ -11,7 +11,7 @@ import 'package:leakuku/features/home/presentation/widgets/alert_card.dart';
 import 'package:leakuku/features/home/presentation/widgets/farm_plan.dart';
 import 'package:leakuku/features/home/presentation/widgets/overview_card.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
-import 'package:leakuku/features/progress/presentation/progress_page.dart';
+import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
 import 'package:leakuku/features/reports/presentation/reports_page.dart';
 import 'package:leakuku/presentation/providers/auth_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
