@@ -12,7 +12,7 @@ class VaccinationCard extends StatelessWidget {
   const VaccinationCard(
       {super.key, required this.vaccines, required this.flock});
 
-  String _formatDate(DateTime date) {
+  String formatDate(DateTime date) {
     const months = [
       'Jan',
       'Feb',
@@ -155,7 +155,7 @@ class VaccinationCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatDate(item.dueDate),
+                    formatDate(item.dueDate),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[700],
                           fontWeight: FontWeight.w600,

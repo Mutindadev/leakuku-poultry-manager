@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
-import 'package:leakuku/features/home/presentation/pages/dashboard_page.dart';
+import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 
 class FarmPlan extends ConsumerStatefulWidget {
   final int selectedIndex;
@@ -50,7 +50,7 @@ class _FarmPlanState extends ConsumerState<FarmPlan> {
         title: 'Vaccinate Birds',
         subtitle: widget.nextVaccination == null
             ? 'No data yet'
-            : '${widget.nextVaccination?.label} · ${widget.nextVaccination?.dueLabel}',
+            : '${widget.nextVaccination?.vaccineName} · ${widget.nextVaccination?.dueLabel}',
         color: AppColors.harvestGold,
         onTap: () => widget.onIndexChanged(2),
       ),

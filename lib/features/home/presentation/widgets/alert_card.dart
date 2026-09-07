@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
-import 'package:leakuku/features/home/presentation/pages/dashboard_page.dart';
+import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 import 'package:leakuku/presentation/providers/stock_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 
@@ -78,7 +78,7 @@ class _AlertCardState extends ConsumerState<AlertCard> {
           icon: FontAwesomeIcons.syringe,
           title: 'Vaccination Due',
           subtitle:
-              '${widget.nextVaccination?.label} · ${widget.nextVaccination?.dueLabel}',
+              '${widget.nextVaccination?.vaccineName} · ${widget.nextVaccination?.dueLabel}',
           color: AppColors.harvestGold,
           onTap: () => widget.onIndexChanged(2),
         ),

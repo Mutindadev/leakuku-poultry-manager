@@ -12,7 +12,8 @@ import 'package:leakuku/features/home/presentation/widgets/farm_plan.dart';
 import 'package:leakuku/features/home/presentation/widgets/overview_card.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
-import 'package:leakuku/features/reports/presentation/reports_page.dart';
+import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
+import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
 import 'package:leakuku/presentation/providers/auth_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 
@@ -223,8 +224,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           }
 
           final candidate = UpcomingVaccination(
-            label: vaccine.vaccineName,
+            vaccineName: vaccine.vaccineName,
             dueDate: dueDate,
+            flockName: flock.name,
           );
 
           if (next == null || dueDate.isBefore(next!.dueDate)) {
@@ -330,29 +332,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         return 'LeaKuku';
     }
   }
-}
-
-class UpcomingVaccination {
-  final String label;
-  final DateTime dueDate;
-
-  const UpcomingVaccination({
-    required this.label,
-    required this.dueDate,
-  });
-
-  String get dueLabel {
-    final remainingDays = this.remainingDays;
-    if (remainingDays <= 0) {
-      return 'Due today';
-    }
-    if (remainingDays == 1) {
-      return 'Due tomorrow';
-    }
-    return 'Due in $remainingDays days';
-  }
-
-  int get remainingDays => dueDate.difference(DateTime.now()).inDays;
 }
 
 // UPDATED AddFlockDialog with edit & duplicate validation
