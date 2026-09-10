@@ -20,7 +20,7 @@ import 'package:leakuku/features/notifications/presentation/notifications_page.d
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
-import 'package:leakuku/features/stock/presentation/stock_page.dart';
+import 'package:leakuku/features/stock/presentation/pages/stock_page.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
