@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:leakuku/core/services/notification_service.dart';
-import 'package:leakuku/data/models/user_model.dart';
+import 'package:leakuku/core/theme/app_theme.dart';
+import 'package:leakuku/data/datasources/breed_local_data_source.dart';
 import 'package:leakuku/data/models/breed_model.dart';
+import 'package:leakuku/data/models/financial_transaction_model.dart';
+import 'package:leakuku/data/models/stock_history_model.dart';
+import 'package:leakuku/data/models/stock_item_model.dart';
+import 'package:leakuku/data/models/user_model.dart';
 import 'package:leakuku/data/models/vaccine_model.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
-import 'package:leakuku/data/models/stock_item_model.dart';
-import 'package:leakuku/data/models/stock_history_model.dart';
-import 'package:leakuku/data/models/financial_transaction_model.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
-import 'package:leakuku/data/datasources/breed_local_data_source.dart';
 import 'package:leakuku/features/auth/presentation/login_register_page.dart';
-import 'package:leakuku/features/finances/presentation/farm_finances_page.dart';
-import 'package:leakuku/features/flock/presentation/dashboard_page.dart';
-import 'package:leakuku/features/flock/presentation/flock_page.dart';
-import 'package:leakuku/features/stock/presentation/stock_page.dart';
-import 'package:leakuku/features/profile/presentation/profile_page.dart';
+import 'package:leakuku/features/finances/presentation/pages/farm_finances_page.dart';
+import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/presentation/pages/flock_page.dart';
+import 'package:leakuku/features/home/presentation/pages/dashboard_page.dart';
 import 'package:leakuku/features/notifications/presentation/notifications_page.dart';
-import 'package:leakuku/features/progress/presentation/progress_page.dart';
-import 'package:leakuku/features/reports/presentation/reports_page.dart';
-import 'package:leakuku/core/theme/app_theme.dart';
+import 'package:leakuku/features/profile/presentation/profile_page.dart';
+import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
+import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
+import 'package:leakuku/features/stock/presentation/pages/stock_page.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize timezone database
   tz.initializeTimeZones();
-  
+
   // Initialize notifications
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -87,4 +87,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

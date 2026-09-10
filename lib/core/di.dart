@@ -1,23 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-
-// Data Sources
-import 'package:leakuku/features/auth/data/auth_local_data_source.dart';
-import 'package:leakuku/features/flock/data/flock_local_data_source.dart';
-
+// Models
+import 'package:leakuku/data/models/user_model.dart';
 // Repositories
 import 'package:leakuku/domain/repositories/auth_repository.dart';
 import 'package:leakuku/domain/repositories/flock_repository.dart';
+// Data Sources
+import 'package:leakuku/features/auth/data/auth_local_data_source.dart';
 import 'package:leakuku/features/auth/data/auth_repository_impl.dart';
-import 'package:leakuku/features/flock/data/flock_repository_impl.dart';
-
-// Models
-import 'package:leakuku/data/models/user_model.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
-
 // Use Cases
 import 'package:leakuku/features/auth/domain/usecases/login_user.dart';
 import 'package:leakuku/features/auth/domain/usecases/register_user.dart';
+import 'package:leakuku/features/flock/data/data_sources/flock_local_data_source.dart';
+import 'package:leakuku/features/flock/data/repositories/flock_repository_impl.dart';
+import 'package:leakuku/features/flock/domain/flock_model.dart';
 
 // === Hive Boxes ===
 
