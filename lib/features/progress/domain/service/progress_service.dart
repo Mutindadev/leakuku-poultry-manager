@@ -253,6 +253,32 @@ class ProgressService {
 
     return buffer.toString();
   }
+
+  Map<String, bool> extractDailyChecklist(String? notes, DateTime date) {
+    final key = '[Daily Record ${dateKey(date)}]';
+    final lines = (notes ?? '').split('\n');
+
+    for (final line in lines) {
+      if (line.startsWith(key)) {
+        final completedRaw =
+            RegExp(r'Completed:\s*(.*)').firstMatch(line)?.group(1);
+
+        if (completedRaw == null || completedRaw.trim().isEmpty) {
+          return const <String, bool>{};
+        }
+
+        return {
+          for (final item in completedRaw
+              .split(',')
+              .map((value) => value.trim())
+              .where((value) => value.isNotEmpty))
+            item: true,
+        };
+      }
+    }
+
+    return const <String, bool>{};
+  }
 }
 
 class DailyRecordDraft {

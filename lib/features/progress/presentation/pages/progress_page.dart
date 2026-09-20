@@ -347,10 +347,17 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
     required int currentWeek,
   }) {
     final draftKey = '${flock.id}-$currentWeek';
-    final existingTaskState = _taskStateByFlock[flock.id] ?? <String, bool>{};
+    final todayChecklist =
+        _progressService.extractDailyChecklist(flock.notes, DateTime.now());
+
+    final existingTaskState =
+        _taskStateByFlock[flock.id] ?? const <String, bool>{};
+
     _taskStateByFlock[flock.id] = {
       for (final task in tasks)
-        task.title: existingTaskState[task.title] ?? false,
+        task.title: todayChecklist[task.title] ??
+            existingTaskState[task.title] ??
+            false,
     };
 
     if (_loadedDraftKey == draftKey) {
