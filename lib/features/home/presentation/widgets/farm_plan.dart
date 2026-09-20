@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/progress/domain/service/progress_service.dart';
 import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 
 class FarmPlan extends ConsumerStatefulWidget {
@@ -35,47 +36,92 @@ class _FarmPlanState extends ConsumerState<FarmPlan> {
 
   @override
   Widget build(BuildContext context) {
+    final service = const ProgressService();
+    final todayChecklist = widget.flocks.isEmpty
+        ? const <String, bool>{}
+        : service.extractDailyChecklist(
+            widget.flocks.first.notes,
+            DateTime.now(),
+          );
+
     final planItems = <_PlanItem>[
-      _PlanItem(
-        icon: FontAwesomeIcons.bowlFood,
-        title: 'Feed Birds',
-        subtitle: widget.flocks.isEmpty
-            ? 'No data yet'
-            : 'Prepare ${_formatFeed(widget.totalaDailyFeed)} today',
-        color: AppColors.leakukuGreen,
-        onTap: () => widget.onIndexChanged(2),
-      ),
-      _PlanItem(
-        icon: FontAwesomeIcons.syringe,
-        title: 'Vaccinate Birds',
-        subtitle: widget.nextVaccination == null
-            ? 'No data yet'
-            : '${widget.nextVaccination?.vaccineName} · ${widget.nextVaccination?.dueLabel}',
-        color: AppColors.harvestGold,
-        onTap: () => widget.onIndexChanged(2),
-      ),
-      _PlanItem(
-        icon: FontAwesomeIcons.droplet,
-        title: 'Check Water',
-        subtitle: widget.flocks.isEmpty
-            ? 'No data yet'
-            : 'Manual check for all drinkers',
-        color: AppColors.informationBlue,
-        onTap: () => widget.onIndexChanged(2),
-      ),
-      _PlanItem(
-        icon: FontAwesomeIcons.penToSquare,
-        title: 'Record Birds Lost',
-        subtitle: widget.flocks.isEmpty
-            ? 'No data yet'
-            : 'Update after morning rounds',
-        color: AppColors.softGray,
-        onTap: () => widget.onIndexChanged(2),
-      ),
+      if (!(todayChecklist['Feed birds'] ?? false))
+        _PlanItem(
+          icon: FontAwesomeIcons.bowlFood,
+          title: 'Feed birds',
+          subtitle: widget.flocks.isEmpty
+              ? 'No data yet'
+              : 'Prepare ${_formatFeed(widget.totalaDailyFeed)} today',
+          color: AppColors.leakukuGreen,
+          onTap: () => widget.onIndexChanged(2),
+        ),
+      if (!(todayChecklist['Refresh water'] ?? false))
+        _PlanItem(
+          icon: FontAwesomeIcons.droplet,
+          title: 'Refresh water',
+          subtitle: widget.flocks.isEmpty
+              ? 'No data yet'
+              : 'Clean drinkers and refill fresh water',
+          color: AppColors.informationBlue,
+          onTap: () => widget.onIndexChanged(2),
+        ),
+      if (!(todayChecklist['Observe bird activity'] ?? false))
+        _PlanItem(
+          icon: FontAwesomeIcons.eye,
+          title: 'Observe bird activity',
+          subtitle: widget.flocks.isEmpty
+              ? 'No data yet'
+              : 'Watch appetite, movement, and comfort',
+          color: AppColors.leakukuGreen,
+          onTap: () => widget.onIndexChanged(2),
+        ),
+      if (!(todayChecklist['Check litter'] ?? false))
+        _PlanItem(
+          icon: FontAwesomeIcons.broom,
+          title: 'Check litter',
+          subtitle: widget.flocks.isEmpty
+              ? 'No data yet'
+              : 'Remove wet spots and keep the floor dry',
+          color: AppColors.softGray,
+          onTap: () => widget.onIndexChanged(2),
+        ),
+      if (!(todayChecklist['Record mortality'] ?? false))
+        _PlanItem(
+          icon: FontAwesomeIcons.heartPulse,
+          title: 'Record mortality',
+          subtitle: widget.flocks.isEmpty
+              ? 'No data yet'
+              : 'Update after morning rounds',
+          color: Colors.red,
+          onTap: () => widget.onIndexChanged(2),
+        ),
+      if (!(todayChecklist['Administer scheduled vaccine'] ?? false) &&
+          widget.nextVaccination != null)
+        _PlanItem(
+          icon: FontAwesomeIcons.syringe,
+          title: 'Administer scheduled vaccine',
+          subtitle: widget.nextVaccination == null
+              ? 'No data yet'
+              : '${widget.nextVaccination!.vaccineName} · ${widget.nextVaccination!.dueLabel}',
+          color: AppColors.harvestGold,
+          onTap: () => widget.onIndexChanged(2),
+        ),
     ];
 
+    final finalPlanItems = planItems.isEmpty
+        ? <_PlanItem>[
+            _PlanItem(
+              icon: FontAwesomeIcons.checkCircle,
+              title: 'Daily checklist complete',
+              subtitle: 'Everything is done for today.',
+              color: AppColors.leakukuGreen,
+              onTap: () => widget.onIndexChanged(2),
+            ),
+          ]
+        : planItems;
+
     return Column(
-      children: planItems
+      children: finalPlanItems
           .map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -85,7 +131,9 @@ class _FarmPlanState extends ConsumerState<FarmPlan> {
                   borderRadius: BorderRadius.circular(16),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -96,8 +144,11 @@ class _FarmPlanState extends ConsumerState<FarmPlan> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
-                            child:
-                                FaIcon(item.icon, size: 16, color: item.color),
+                            child: FaIcon(
+                              item.icon,
+                              size: 16,
+                              color: item.color,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
