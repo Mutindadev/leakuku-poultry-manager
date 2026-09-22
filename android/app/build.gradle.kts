@@ -1,12 +1,15 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.leakuku"
+    namespace = "com.eltopu.leakuku"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.leakuku"
+        applicationId = "com.eltopu.leakuku"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
