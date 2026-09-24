@@ -2,26 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
-import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/domain/entities/user.dart';
+import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
+import 'package:leakuku/presentation/providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authhProvider);
     final user = authState.user;
     final stats = ref.watch(flockStatsProvider);
     final flocks = ref.watch(flockProvider).flocks;
+    final auth = ref.watch(authhProvider);
 
     // Calculate member since from oldest flock or current date
     String memberSince = 'New';
     if (flocks.isNotEmpty) {
-      final oldestFlock = flocks.reduce((a, b) => 
-        a.purchaseDate.isBefore(b.purchaseDate) ? a : b
-      );
+      final oldestFlock = flocks
+          .reduce((a, b) => a.purchaseDate.isBefore(b.purchaseDate) ? a : b);
       final date = oldestFlock.purchaseDate;
       memberSince = '${_getMonthName(date.month)} ${date.year}';
     }
@@ -74,7 +74,8 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF9800),
                         borderRadius: BorderRadius.circular(16),
@@ -102,7 +103,7 @@ class ProfilePage extends ConsumerWidget {
               ],
             ),
           ),
-          
+
           // Statistics Cards
           Padding(
             padding: const EdgeInsets.all(16),
@@ -162,15 +163,16 @@ class ProfilePage extends ConsumerWidget {
                         ),
                         ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red),
                           child: const Text('Logout'),
                         ),
                       ],
                     ),
                   );
-                  
+
                   if (confirm == true && context.mounted) {
-                    await ref.read(authProvider.notifier).logout();
+                    await ref.read(authhProvider.notifier).logout();
                     if (context.mounted) {
                       Navigator.of(context).pushReplacementNamed('/');
                     }
@@ -192,11 +194,25 @@ class ProfilePage extends ConsumerWidget {
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return months[month - 1];
   }
 
-  Widget _buildStatCard(BuildContext context, {
+  Widget _buildStatCard(
+    BuildContext context, {
     required FaIconData icon,
     required String title,
     required String value,
@@ -230,9 +246,9 @@ class ProfilePage extends ConsumerWidget {
 
   void _showEditDialog(BuildContext context, WidgetRef ref, User? user) {
     if (user == null) return;
-    
+
     final nameController = TextEditingController(text: user.name);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

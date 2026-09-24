@@ -37,7 +37,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Widget _buildHomePage() {
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authhProvider);
     final user = authState.user;
     final flockState = ref.watch(flockProvider);
     final stats = ref.watch(flockStatsProvider);

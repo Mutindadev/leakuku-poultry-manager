@@ -133,7 +133,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                             SizedBox(width: 8),
                             Text(
                               '(Egg Production)',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -148,7 +149,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                             SizedBox(width: 8),
                             Text(
                               '(Meat)',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -189,7 +191,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter the number of birds';
                       }
-                      if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                      if (int.tryParse(value) == null ||
+                          int.parse(value) <= 0) {
                         return 'Please enter a valid number';
                       }
                       return null;
@@ -241,7 +244,7 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
             ElevatedButton.icon(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  final authState = ref.read(authProvider);
+                  final authState = ref.read(authhProvider);
                   final userId = authState.user?.id ?? '';
                   final nameLower = _nameController.text.trim().toLowerCase();
 
@@ -249,7 +252,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                     (flock) =>
                         flock.userId == userId &&
                         flock.name.trim().toLowerCase() == nameLower &&
-                        (widget.existing == null || flock.id != widget.existing!.id),
+                        (widget.existing == null ||
+                            flock.id != widget.existing!.id),
                   );
 
                   if (duplicate) {
@@ -287,8 +291,10 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
 
                     try {
                       final breedDataSource = ref.read(breedDataSourceProvider);
-                      final weeklyPlanDataSource = ref.read(weeklyPlanDataSourceProvider);
-                      final generateWeeklyPlanUseCase = GenerateWeeklyPlanUseCase(
+                      final weeklyPlanDataSource =
+                          ref.read(weeklyPlanDataSourceProvider);
+                      final generateWeeklyPlanUseCase =
+                          GenerateWeeklyPlanUseCase(
                         breedDataSource: breedDataSource,
                         weeklyPlanDataSource: weeklyPlanDataSource,
                       );
@@ -300,7 +306,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                         flockStartDate: flock.purchaseDate,
                       );
 
-                      final vaccineDataSource = ref.read(vaccineDataSourceProvider);
+                      final vaccineDataSource =
+                          ref.read(vaccineDataSourceProvider);
                       final notificationService = NotificationService();
                       final generateVaccineScheduleUseCase =
                           GenerateVaccineScheduleUseCase(
@@ -352,11 +359,13 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                     ? FontAwesomeIcons.plus
                     : FontAwesomeIcons.floppyDisk,
               ),
-              label: Text(widget.existing == null ? 'Add Birds' : 'Save Changes'),
+              label:
+                  Text(widget.existing == null ? 'Add Birds' : 'Save Changes'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.leakukuGreen,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
