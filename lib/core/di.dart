@@ -2,15 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 // Models
 import 'package:leakuku/data/models/user_model.dart';
-// Repositories
-import 'package:leakuku/domain/repositories/auth_repository.dart';
 import 'package:leakuku/domain/repositories/flock_repository.dart';
-// Data Sources
-import 'package:leakuku/features/auth/data/auth_local_data_source.dart';
-import 'package:leakuku/features/auth/data/auth_repository_impl.dart';
-// Use Cases
-import 'package:leakuku/features/auth/domain/usecases/login_user.dart';
-import 'package:leakuku/features/auth/domain/usecases/register_user.dart';
+import 'package:leakuku/features/auth/data/data_sources/remote.dart';
+import 'package:leakuku/features/auth/data/data_sources/remote_implementation.dart';
+import 'package:leakuku/features/auth/data/repositories/auth_implementation.dart';
+import 'package:leakuku/features/auth/domain/repositories/auth_repository.dart';
+// Repositories
 import 'package:leakuku/features/flock/data/data_sources/flock_local_data_source.dart';
 import 'package:leakuku/features/flock/data/repositories/flock_repository_impl.dart';
 import 'package:leakuku/features/flock/domain/flock_model.dart';
@@ -30,9 +27,13 @@ final flockBoxProvider = Provider<Box<FlockModel>>((ref) {
 
 // === Local Data Sources ===
 
-final authLocalDataSourceProvider = Provider<AuthLocalDataSource>((ref) {
-  final userBox = ref.watch(userBoxProvider);
-  return AuthLocalDataSourceImpl(userBox: userBox);
+final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
+  return AuthRemoteDataSourceImplementation();
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  final remoteDataSource = ref.watch(authRemoteDataSourceProvider);
+  return AuthRepositoryImplementation(remoteDataSource: remoteDataSource);
 });
 
 final flockLocalDataSourceProvider = Provider<FlockLocalDataSource>((ref) {
@@ -42,10 +43,11 @@ final flockLocalDataSourceProvider = Provider<FlockLocalDataSource>((ref) {
 
 // === Repositories ===
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final localDataSource = ref.watch(authLocalDataSourceProvider);
-  return AuthRepositoryImpl(localDataSource: localDataSource);
-});
+// final authRepositoryProvider = Provider<AuthRepository>((ref) {
+//   final localDataSource = ref.watch(authLocalDataSourceProvider);
+//   return AuthRepositoryImplementation(
+//       remoteDataSource: AuthRemoteDataSourceImplementation());
+// });
 
 final flockRepositoryProvider = Provider<FlockRepository>((ref) {
   final localDataSource = ref.watch(flockLocalDataSourceProvider);
@@ -54,12 +56,12 @@ final flockRepositoryProvider = Provider<FlockRepository>((ref) {
 
 // === Use Cases ===
 
-final registerUserProvider = Provider<RegisterUser>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return RegisterUser(repo);
-});
+// final registerUserProvider = Provider<RegisterUser>((ref) {
+//   final repo = ref.watch(authRepositoryProvider);
+//   return RegisterUser(repo);
+// });
 
-final loginUserProvider = Provider<LoginUser>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return LoginUser(repo);
-});
+// final loginUserProvider = Provider<LoginUser>((ref) {
+//   final repo = ref.watch(authRepositoryProvider);
+//   return LoginUser(repo);
+// });
