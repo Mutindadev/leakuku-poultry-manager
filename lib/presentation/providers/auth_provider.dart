@@ -168,12 +168,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
           errorIsInput: false,
         ),
         (user) async {
-          // await _sessionService.saveSession(
-          //   userId: user.uid,
-          //   email: user.email,
-          // );
+          await _sessionService.saveSession(
+            userId: user.uid,
+            email: user.email ?? '',
+          );
           state = state.copyWith(
-            // user: user,
+            user: User(
+              id: user.uid,
+              name: name,
+              email: user.email ?? '',
+              role: 'farmer',
+            ),
             isLoading: false,
             error: null,
             lastWasRegister: true,
