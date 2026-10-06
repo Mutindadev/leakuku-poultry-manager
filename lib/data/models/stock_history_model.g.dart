@@ -8,7 +8,7 @@ part of 'stock_history_model.dart';
 
 class StockHistoryModelAdapter extends TypeAdapter<StockHistoryModel> {
   @override
-  final int typeId = 14;
+  final int typeId = 5;
 
   @override
   StockHistoryModel read(BinaryReader reader) {

@@ -1,40 +1,47 @@
-import 'package:hive/hive.dart';
+import 'dart:convert';
+
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:leakuku/hive_helper/fields/financial_transaction_model_fields.dart';
+import 'package:leakuku/hive_helper/hive_adapters.dart';
+import 'package:leakuku/hive_helper/hive_types.dart';
 
 part 'financial_transaction_model.g.dart';
 
-@HiveType(typeId: 15)
-class FinancialTransactionModel {
-  @HiveField(0)
+@HiveType(
+    typeId: HiveTypes.financialTransactionModel,
+    adapterName: HiveAdapters.financialTransactionModel)
+class FinancialTransactionModel extends HiveObject {
+  @HiveField(FinancialTransactionModelFields.id)
   final String id;
 
-  @HiveField(1)
+  @HiveField(FinancialTransactionModelFields.userId)
   final String userId;
 
-  @HiveField(2)
+  @HiveField(FinancialTransactionModelFields.transactionType)
   final String transactionType;
 
-  @HiveField(3)
+  @HiveField(FinancialTransactionModelFields.category)
   final String category;
 
-  @HiveField(4)
+  @HiveField(FinancialTransactionModelFields.amount)
   final double amount;
 
-  @HiveField(5)
+  @HiveField(FinancialTransactionModelFields.date)
   final DateTime date;
 
-  @HiveField(6)
+  @HiveField(FinancialTransactionModelFields.notes)
   final String? notes;
 
-  @HiveField(7)
+  @HiveField(FinancialTransactionModelFields.lastUpdated)
   final DateTime lastUpdated;
 
-  @HiveField(8)
-  final String? relatedFlock;
+  @HiveField(FinancialTransactionModelFields.flockId)
+  final String flockId;
 
-  @HiveField(9)
+  @HiveField(FinancialTransactionModelFields.paymentMethod)
   final String? paymentMethod;
 
-  const FinancialTransactionModel({
+  FinancialTransactionModel({
     required this.id,
     required this.userId,
     required this.transactionType,
@@ -43,7 +50,7 @@ class FinancialTransactionModel {
     required this.date,
     this.notes,
     required this.lastUpdated,
-    this.relatedFlock,
+    required this.flockId,
     this.paymentMethod,
   });
 
@@ -59,7 +66,7 @@ class FinancialTransactionModel {
     DateTime? date,
     String? notes,
     DateTime? lastUpdated,
-    String? relatedFlock,
+    String? flockId,
     String? paymentMethod,
   }) {
     return FinancialTransactionModel(
@@ -71,8 +78,81 @@ class FinancialTransactionModel {
       date: date ?? this.date,
       notes: notes ?? this.notes,
       lastUpdated: lastUpdated ?? this.lastUpdated,
-      relatedFlock: relatedFlock ?? this.relatedFlock,
+      flockId: flockId ?? this.flockId,
       paymentMethod: paymentMethod ?? this.paymentMethod,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'id': id,
+      'userId': userId,
+      'transactionType': transactionType,
+      'category': category,
+      'amount': amount,
+      'date': date.millisecondsSinceEpoch,
+      'notes': notes,
+      'lastUpdated': lastUpdated.millisecondsSinceEpoch,
+      'flockId': flockId,
+      'paymentMethod': paymentMethod,
+    };
+  }
+
+  factory FinancialTransactionModel.fromMap(Map<String, dynamic> map) {
+    return FinancialTransactionModel(
+      id: map['id'] as String,
+      userId: map['userId'] as String,
+      transactionType: map['transactionType'] as String,
+      category: map['category'] as String,
+      amount: map['amount'] as double,
+      date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
+      notes: map['notes'] != null ? map['notes'] as String : null,
+      lastUpdated:
+          DateTime.fromMillisecondsSinceEpoch(map['lastUpdated'] as int),
+      flockId: map['flockId'] as String,
+      paymentMethod:
+          map['paymentMethod'] != null ? map['paymentMethod'] as String : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory FinancialTransactionModel.fromJson(String source) =>
+      FinancialTransactionModel.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() {
+    return 'FinancialTransactionModel(id: $id, userId: $userId, transactionType: $transactionType, category: $category, amount: $amount, date: $date, notes: $notes, lastUpdated: $lastUpdated, flockId: $flockId, paymentMethod: $paymentMethod)';
+  }
+
+  @override
+  bool operator ==(covariant FinancialTransactionModel other) {
+    if (identical(this, other)) return true;
+
+    return other.id == id &&
+        other.userId == userId &&
+        other.transactionType == transactionType &&
+        other.category == category &&
+        other.amount == amount &&
+        other.date == date &&
+        other.notes == notes &&
+        other.lastUpdated == lastUpdated &&
+        other.flockId == flockId &&
+        other.paymentMethod == paymentMethod;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        userId.hashCode ^
+        transactionType.hashCode ^
+        category.hashCode ^
+        amount.hashCode ^
+        date.hashCode ^
+        notes.hashCode ^
+        lastUpdated.hashCode ^
+        flockId.hashCode ^
+        paymentMethod.hashCode;
   }
 }

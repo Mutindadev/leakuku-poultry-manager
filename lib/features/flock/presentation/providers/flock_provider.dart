@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:leakuku/core/di.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class FlockState {
   final List<FlockModel> flocks;
@@ -35,8 +35,8 @@ class FlockNotifier extends StateNotifier<FlockState> {
   Future<void> loadFlocks() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final authState = ref.read(authhProvider);
-      final userId = authState.user?.id ?? '';
+      final userState = ref.read(userProvider);
+      final userId = userState.userModel?.uid ?? '';
 
       final dataSource = ref.read(flockLocalDataSourceProvider);
       final flocks = await dataSource.getAllFlocks(userId);

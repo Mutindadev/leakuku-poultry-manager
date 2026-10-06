@@ -4,7 +4,7 @@ import 'package:leakuku/features/reports/data/models/business_analytics_data.dar
 import 'package:leakuku/features/reports/data/models/flock_financial_summary.dart';
 import 'package:leakuku/features/reports/domain/service/report_service.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/farm_finance_provider.dart';
 
 class BusinessAnalyticsState {
@@ -67,7 +67,8 @@ class BusinessAnalyticsNotifier extends StateNotifier<BusinessAnalyticsState> {
   Future<BusinessAnalyticsData> _loadBusinessAnalytics() async {
     const reportService = ReportService();
 
-    final userId = ref.read(authhProvider).user?.id;
+    // final userId = ref.read(authhProvider).user?.id;
+    final userId = ref.read(userProvider).userModel?.uid;
 
     if (userId == null || userId.isEmpty) {
       return const BusinessAnalyticsData(
@@ -115,7 +116,7 @@ class BusinessAnalyticsNotifier extends StateNotifier<BusinessAnalyticsState> {
         continue;
       }
 
-      final flockKey = item.relatedFlock?.trim();
+      final flockKey = item.flockId?.trim();
 
       if (flockKey == null || flockKey.isEmpty) {
         continue;

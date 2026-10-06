@@ -8,7 +8,7 @@ part of 'stock_item_model.dart';
 
 class StockItemModelAdapter extends TypeAdapter<StockItemModel> {
   @override
-  final int typeId = 13;
+  final int typeId = 6;
 
   @override
   StockItemModel read(BinaryReader reader) {

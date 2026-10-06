@@ -1,37 +1,43 @@
+import 'dart:convert';
+
 import 'package:hive/hive.dart';
+import 'package:leakuku/hive_helper/fields/stock_item_model_fields.dart';
+import 'package:leakuku/hive_helper/hive_adapters.dart';
+import 'package:leakuku/hive_helper/hive_types.dart';
 
 part 'stock_item_model.g.dart';
 
-@HiveType(typeId: 13)
-class StockItemModel {
-  @HiveField(0)
+@HiveType(
+    typeId: HiveTypes.stockItemModel, adapterName: HiveAdapters.stockItemModel)
+class StockItemModel extends HiveObject {
+  @HiveField(StockItemModelFields.id)
   String id;
 
-  @HiveField(1)
+  @HiveField(StockItemModelFields.category)
   String category;
 
-  @HiveField(2)
+  @HiveField(StockItemModelFields.name)
   String name;
 
-  @HiveField(3)
+  @HiveField(StockItemModelFields.quantity)
   double quantity;
 
-  @HiveField(4)
+  @HiveField(StockItemModelFields.unit)
   String unit;
 
-  @HiveField(5)
+  @HiveField(StockItemModelFields.minimumLevel)
   double minimumLevel;
 
-  @HiveField(6)
+  @HiveField(StockItemModelFields.lastUpdated)
   DateTime lastUpdated;
 
-  @HiveField(7)
+  @HiveField(StockItemModelFields.expiryDate)
   DateTime? expiryDate;
 
-  @HiveField(8)
+  @HiveField(StockItemModelFields.supplier)
   String? supplier;
 
-  @HiveField(9)
+  @HiveField(StockItemModelFields.cost)
   double? cost;
 
   StockItemModel({
@@ -48,4 +54,103 @@ class StockItemModel {
   });
 
   bool get isLowStock => quantity <= minimumLevel;
+
+  StockItemModel copyWith({
+    String? id,
+    String? category,
+    String? name,
+    double? quantity,
+    String? unit,
+    double? minimumLevel,
+    DateTime? lastUpdated,
+    DateTime? expiryDate,
+    String? supplier,
+    double? cost,
+  }) {
+    return StockItemModel(
+      id: id ?? this.id,
+      category: category ?? this.category,
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      minimumLevel: minimumLevel ?? this.minimumLevel,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      expiryDate: expiryDate ?? this.expiryDate,
+      supplier: supplier ?? this.supplier,
+      cost: cost ?? this.cost,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'id': id,
+      'category': category,
+      'name': name,
+      'quantity': quantity,
+      'unit': unit,
+      'minimumLevel': minimumLevel,
+      'lastUpdated': lastUpdated.millisecondsSinceEpoch,
+      'expiryDate': expiryDate?.millisecondsSinceEpoch,
+      'supplier': supplier,
+      'cost': cost,
+    };
+  }
+
+  factory StockItemModel.fromMap(Map<String, dynamic> map) {
+    return StockItemModel(
+      id: map['id'] as String,
+      category: map['category'] as String,
+      name: map['name'] as String,
+      quantity: map['quantity'] as double,
+      unit: map['unit'] as String,
+      minimumLevel: map['minimumLevel'] as double,
+      lastUpdated:
+          DateTime.fromMillisecondsSinceEpoch(map['lastUpdated'] as int),
+      expiryDate: map['expiryDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['expiryDate'] as int)
+          : null,
+      supplier: map['supplier'] != null ? map['supplier'] as String : null,
+      cost: map['cost'] != null ? map['cost'] as double : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory StockItemModel.fromJson(String source) =>
+      StockItemModel.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() {
+    return 'StockItemModel(id: $id, category: $category, name: $name, quantity: $quantity, unit: $unit, minimumLevel: $minimumLevel, lastUpdated: $lastUpdated, expiryDate: $expiryDate, supplier: $supplier, cost: $cost)';
+  }
+
+  @override
+  bool operator ==(covariant StockItemModel other) {
+    if (identical(this, other)) return true;
+
+    return other.id == id &&
+        other.category == category &&
+        other.name == name &&
+        other.quantity == quantity &&
+        other.unit == unit &&
+        other.minimumLevel == minimumLevel &&
+        other.lastUpdated == lastUpdated &&
+        other.expiryDate == expiryDate &&
+        other.supplier == supplier &&
+        other.cost == cost;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        category.hashCode ^
+        name.hashCode ^
+        quantity.hashCode ^
+        unit.hashCode ^
+        minimumLevel.hashCode ^
+        lastUpdated.hashCode ^
+        expiryDate.hashCode ^
+        supplier.hashCode ^
+        cost.hashCode;
+  }
 }

@@ -5,9 +5,9 @@ import 'package:leakuku/core/services/notification_service.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/domain/usecases/generate_vaccine_schedule.dart';
 import 'package:leakuku/domain/usecases/generate_weekly_plan.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/breed_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
@@ -244,8 +244,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
             ElevatedButton.icon(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  final authState = ref.read(authhProvider);
-                  final userId = authState.user?.id ?? '';
+                  final userState = ref.read(userProvider);
+                  final userId = userState.userModel?.uid ?? '';
                   final nameLower = _nameController.text.trim().toLowerCase();
 
                   final duplicate = allFlocks.any(
@@ -267,8 +267,7 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                   }
 
                   final flock = FlockModel(
-                    id: widget.existing?.id ??
-                        DateTime.now().millisecondsSinceEpoch.toString(),
+                    id: widget.existing?.id ?? UniqueKey().toString(),
                     name: _nameController.text.trim(),
                     breed: _selectedBreed,
                     quantity: int.parse(_quantityController.text.trim()),
@@ -277,6 +276,29 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                         ? null
                         : _notesController.text.trim(),
                     userId: userId,
+                    status: 'active',
+                    createdAt: widget.existing?.createdAt ?? DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    startedAt: _purchaseDate,
+                    expectedEndDate: null,
+                    vaccineIds: widget.existing?.vaccineIds ?? [],
+                    weeklyPlanIds: widget.existing?.weeklyPlanIds ?? [],
+                    dailyRecordsIds: widget.existing?.dailyRecordsIds ?? [],
+                    stockItemIds: widget.existing?.stockItemIds ?? [],
+                    financeTransactionIds:
+                        widget.existing?.financeTransactionIds ?? [],
+                    currentWeek: widget.existing?.currentWeek ?? 'Week 1',
+                    mortalityPercent: widget.existing?.mortalityPercent ?? '0%',
+                    avgBirdWeightKg: widget.existing?.avgBirdWeightKg ?? '0.0',
+                    feedConsumedKg: widget.existing?.feedConsumedKg ?? '0.0',
+                    waterConsumedLiters:
+                        widget.existing?.waterConsumedLiters ?? '0.0',
+                    lowStockItemsCount:
+                        widget.existing?.lowStockItemsCount ?? '0',
+                    pendingVaccinesCount:
+                        widget.existing?.pendingVaccinesCount ?? '0',
+                    lastDailyRecordDate: widget.existing?.lastDailyRecordDate ??
+                        _purchaseDate.toIso8601String(),
                   );
 
                   if (widget.existing == null) {

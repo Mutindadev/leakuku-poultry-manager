@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 
 abstract class FlockLocalDataSource {
   Future<List<FlockModel>> getAllFlocks(String userId);

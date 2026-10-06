@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/features/progress/data/models/daily_task.dart';
 import 'package:leakuku/features/progress/domain/service/progress_service.dart';
@@ -270,13 +270,18 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
             .toList(),
       );
 
-      final updatedFlock = FlockModel(
-        id: flock.id,
-        name: flock.name,
-        breed: flock.breed,
+      // final updatedFlock = FlockModel(
+      //   id: flock.id,
+      //   name: flock.name,
+      //   breed: flock.breed,
+      //   quantity: updatedQuantity,
+      //   purchaseDate: flock.purchaseDate,
+      //   userId: flock.userId,
+      //   notes: _progressService.mergeDailyRecordNote(flock.notes, dailyNote),
+      // );
+
+      final updatedFlock = flock.copyWith(
         quantity: updatedQuantity,
-        purchaseDate: flock.purchaseDate,
-        userId: flock.userId,
         notes: _progressService.mergeDailyRecordNote(flock.notes, dailyNote),
       );
 
@@ -310,6 +315,7 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
               ? planToUpdate.actualMortalityPercent
               : (mortalityCount / startingBirds) * 100,
           weekStartDate: planToUpdate.weekStartDate,
+          updatedAt: DateTime.now(),
         );
 
         await ref
