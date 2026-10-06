@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1068523060393",
+    "project_id": "leakuku-7312b",
+    "storage_bucket": "leakuku-7312b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068523060393:android:dabff745c4979cbd013db8",
+        "android_client_info": {
+          "package_name": "com.eltopu.leakuku"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1068523060393-6i4d5cfuv99m1si7pri3ld77afod8q9p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOd7pgke-MtvyV1BJZzI3LXAlFziiToqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1068523060393-6i4d5cfuv99m1si7pri3ld77afod8q9p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1068523060393-1l717ef0v0qkabtsd2tnvec86ud028e7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.leakuku"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

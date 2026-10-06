@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -21,10 +23,25 @@ import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
 import 'package:leakuku/features/stock/presentation/pages/stock_page.dart';
+import 'package:leakuku/firebase_options.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    FirebaseDatabase.instance.setPersistenceEnabled(true);
+    FirebaseDatabase.instance.setPersistenceCacheSizeBytes(10000000);
+
+    debugPrint('✅ Firebase initialized successfully');
+    debugPrint('📊 Database URL: ${FirebaseDatabase.instance.databaseURL}');
+  } catch (e) {
+    debugPrint('❌ Error initializing Firebase: $e');
+  }
 
   // Initialize timezone database
   tz.initializeTimeZones();

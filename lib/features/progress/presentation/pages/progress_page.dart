@@ -72,6 +72,10 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
     final flocks = flockState.flocks;
     final selectedFlock = ref.watch(selectedFlockProvider);
 
+    if (flocks.isEmpty) {
+      return EmptyDailyRecordsState(showAppBar: widget.showAppBar);
+    }
+
     final flock = selectedFlock ?? flocks.first;
     final ageDays = DateTime.now().difference(flock.purchaseDate).inDays;
     final stage = _progressService.getStage(ageDays);

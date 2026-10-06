@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-import 'package:leakuku/core/di.dart';
 import 'package:leakuku/core/services/session_service.dart';
 import 'package:leakuku/data/models/user_model.dart';
 import 'package:leakuku/domain/entities/user.dart';
-import 'package:leakuku/features/auth/domain/usecases/login_user.dart';
-import 'package:leakuku/features/auth/domain/usecases/register_user.dart';
+import 'package:leakuku/features/auth/data/data_sources/remote_implementation.dart';
+import 'package:leakuku/features/auth/data/repositories/auth_implementation.dart';
+import 'package:leakuku/features/auth/domain/use_case/register_with_email.dart';
+import 'package:leakuku/features/auth/domain/use_case/sign_out.dart';
+import 'package:leakuku/features/auth/domain/use_case/signin_with_email.dart';
 
 class AuthState {
+  // final UserModel? userModel;
   final User? user;
   final String? error;
   final bool isLoading;
@@ -16,6 +19,7 @@ class AuthState {
   final bool errorIsInput;
 
   AuthState({
+    // this.userModel,
     this.user,
     this.error,
     this.isLoading = false,
@@ -41,6 +45,30 @@ class AuthState {
   }
 }
 
+SigninWithEmailUseCase _signInWithEmailUseCase = SigninWithEmailUseCase(
+  repository: AuthRepositoryImplementation(
+    remoteDataSource: AuthRemoteDataSourceImplementation(),
+  ),
+);
+
+SignOutUseCase _signOutUseCase = SignOutUseCase(
+  repository: AuthRepositoryImplementation(
+    remoteDataSource: AuthRemoteDataSourceImplementation(),
+  ),
+);
+
+RegisterWithEmailUseCase _registerWithEmailUseCase = RegisterWithEmailUseCase(
+  repository: AuthRepositoryImplementation(
+    remoteDataSource: AuthRemoteDataSourceImplementation(),
+  ),
+);
+
+// ReadUserUseCase _readUserUseCase = ReadUserUseCase(
+//   repository: UserRepositoryImplementation(
+//     remoteDataSource: UserRemoteDataSourseImlementation(),
+//   ),
+// );
+
 class AuthNotifier extends StateNotifier<AuthState> {
   final Ref ref;
   final SessionService _sessionService = SessionService();
@@ -62,10 +90,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, error: null, lastWasRegister: false, errorIsInput: false);
+    state = state.copyWith(
+        isLoading: true,
+        error: null,
+        lastWasRegister: false,
+        errorIsInput: false);
     try {
-      final loginUseCase = ref.read(loginUserProvider);
-      final result = await loginUseCase(LoginParams(email: e, password: p));
+      // final loginUseCase = ref.read(authProvider);
+      // final result = await loginUseCase.signInWithEmail(email: e, password: p);
+      final result = await _signInWithEmailUseCase(e, p);
       result.fold(
         (failure) => state = state.copyWith(
           error: failure.message,
@@ -75,11 +108,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
         (user) async {
           await _sessionService.saveSession(
-            userId: user.id,
-            email: user.email,
+            userId: user.uid,
+            email: user.email ?? '',
           );
           state = state.copyWith(
-            user: user,
+            user: User(
+              id: user.uid,
+              name: user.displayName ?? '',
+              email: user.email ?? '',
+              role: 'farmer',
+            ),
             isLoading: false,
             error: null,
             lastWasRegister: false,
@@ -97,7 +135,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> register(String name, String email, String password, String role) async {
+  Future<void> register(
+      String name, String email, String password, String role) async {
     final n = name.trim();
     final e = email.trim();
     final p = password.trim();
@@ -112,10 +151,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, error: null, lastWasRegister: true, errorIsInput: false);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      lastWasRegister: true,
+      errorIsInput: false,
+    );
+
     try {
-      final registerUseCase = ref.read(registerUserProvider);
-      final result = await registerUseCase(RegisterParams(name: n, email: e, password: p, role: role));
+      final result = await _registerWithEmailUseCase(e, p, name);
       result.fold(
         (failure) => state = state.copyWith(
           error: failure.message,
@@ -124,12 +168,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           errorIsInput: false,
         ),
         (user) async {
-          await _sessionService.saveSession(
-            userId: user.id,
-            email: user.email,
-          );
+          // await _sessionService.saveSession(
+          //   userId: user.uid,
+          //   email: user.email,
+          // );
           state = state.copyWith(
-            user: user,
+            // user: user,
             isLoading: false,
             error: null,
             lastWasRegister: true,
@@ -160,9 +204,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final box = Hive.box<UserModel>('userBox');
         final model = box.values.firstWhere(
           (u) => u.id == userId,
-          orElse: () => UserModel(id: userId, name: 'Farmer', email: data['email'] ?? '', role: 'Farmer'),
+          orElse: () => UserModel(
+              id: userId,
+              name: 'Farmer',
+              email: data['email'] ?? '',
+              role: 'Farmer'),
         );
-        final restored = User(id: model.id, name: model.name, email: model.email, role: model.role);
+        final restored = User(
+            id: model.id,
+            name: model.name,
+            email: model.email,
+            role: model.role);
         state = state.copyWith(user: restored, isLoading: false, error: null);
       } catch (_) {
         state = state.copyWith(isLoading: false);
@@ -173,11 +225,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await _sessionService.clearSession();
-    state = AuthState();
+    final result = await _signOutUseCase();
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          error: failure.message,
+          isLoading: false,
+        );
+      },
+      (_) async {
+        await _sessionService.clearSession();
+        state = AuthState();
+      },
+    );
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authhProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref);
 });

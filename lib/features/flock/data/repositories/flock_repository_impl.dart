@@ -25,7 +25,8 @@ class FlockRepositoryImpl implements FlockRepository {
       await localDataSource.addFlock(flockModel);
       return Right(flock);
     } catch (e) {
-      return Left(CacheFailure());
+      return Left(
+          CacheFailure(message: 'Failed to create flock', statusCode: 500));
     }
   }
 
@@ -35,7 +36,8 @@ class FlockRepositoryImpl implements FlockRepository {
       final flockModel = await localDataSource.getFlockById(flockId);
       return Right(_toEntity(flockModel));
     } catch (e) {
-      return Left(CacheFailure());
+      return Left(
+          CacheFailure(message: 'Failed to get flock', statusCode: 500));
     }
   }
 
@@ -46,7 +48,8 @@ class FlockRepositoryImpl implements FlockRepository {
       final flocks = flockModels.map((model) => _toEntity(model)).toList();
       return Right(flocks);
     } catch (e) {
-      return Left(CacheFailure());
+      return Left(
+          CacheFailure(message: 'Failed to get all flocks', statusCode: 500));
     }
   }
 
@@ -65,7 +68,8 @@ class FlockRepositoryImpl implements FlockRepository {
       await localDataSource.updateFlock(flockModel);
       return Right(flock);
     } catch (e) {
-      return Left(CacheFailure());
+      return Left(
+          CacheFailure(message: 'Failed to update flock', statusCode: 500));
     }
   }
 
@@ -75,7 +79,8 @@ class FlockRepositoryImpl implements FlockRepository {
       await localDataSource.deleteFlock(flockId);
       return const Right(null);
     } catch (e) {
-      return Left(CacheFailure());
+      return Left(
+          CacheFailure(message: 'Failed to delete flock', statusCode: 500));
     }
   }
 

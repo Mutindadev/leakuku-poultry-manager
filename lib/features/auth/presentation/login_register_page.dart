@@ -25,7 +25,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      final authState = ref.read(authProvider);
+      final authState = ref.read(authhProvider);
       if (!_redirected && authState.user != null) {
         _redirected = true;
         Navigator.of(context).pushReplacementNamed('/dashboard');
@@ -80,16 +80,15 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
+    ref.listen<AuthState>(authhProvider, (previous, next) {
       if ((next.error ?? '').isNotEmpty) {
         final isRegister = next.lastWasRegister == true;
         final isInput = next.errorIsInput;
         final bg = isInput
             ? Colors.amber.shade800
             : (isRegister ? Colors.orange.shade700 : Colors.red.shade700);
-        final prefix = isInput
-            ? 'Input'
-            : (isRegister ? 'Registration' : 'Login');
+        final prefix =
+            isInput ? 'Input' : (isRegister ? 'Registration' : 'Login');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -103,7 +102,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
       }
     });
 
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authhProvider);
 
     return Scaffold(
       backgroundColor: AppColors.farmCream,
@@ -112,7 +111,8 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -128,16 +128,18 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                     const SizedBox(height: 16),
                     Text(
                       _isLogin ? 'Welcome Back!' : 'Join LeaKuku',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF212121),
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF212121),
+                              ),
                     ),
                     const SizedBox(height: 24),
                     if (!_isLogin) ...[
                       TextFormField(
                         controller: _nameController,
-                        decoration: _inputDecoration('Name', FontAwesomeIcons.user),
+                        decoration:
+                            _inputDecoration('Name', FontAwesomeIcons.user),
                         validator: _validateName,
                       ),
                       const SizedBox(height: 14),
@@ -145,17 +147,22 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: _inputDecoration('Email', FontAwesomeIcons.envelope),
+                      decoration:
+                          _inputDecoration('Email', FontAwesomeIcons.envelope),
                       validator: _validateEmail,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      decoration: _inputDecoration('Password', FontAwesomeIcons.lock).copyWith(
+                      decoration:
+                          _inputDecoration('Password', FontAwesomeIcons.lock)
+                              .copyWith(
                         suffixIcon: IconButton(
                           icon: FaIcon(
-                            _obscurePassword ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
+                            _obscurePassword
+                                ? FontAwesomeIcons.eyeSlash
+                                : FontAwesomeIcons.eye,
                             size: 20,
                             color: AppColors.leakukuGreen,
                           ),
@@ -172,9 +179,11 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                       const SizedBox(height: 14),
                       DropdownButtonFormField<String>(
                         initialValue: _role, // Changed from value
-                        decoration: _inputDecoration('Role', FontAwesomeIcons.userTag),
+                        decoration:
+                            _inputDecoration('Role', FontAwesomeIcons.userTag),
                         items: const ['Farmer', 'Admin']
-                            .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                            .map((value) => DropdownMenuItem(
+                                value: value, child: Text(value)))
                             .toList(),
                         onChanged: (newValue) {
                           if (newValue != null) {
@@ -192,29 +201,38 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                             : () async {
                                 if (_formKey.currentState!.validate()) {
                                   if (_isLogin) {
-                                    await ref.read(authProvider.notifier).login(
-                                      _emailController.text.trim(),
-                                      _passwordController.text.trim(),
-                                    );
+                                    await ref
+                                        .read(authhProvider.notifier)
+                                        .login(
+                                          _emailController.text.trim(),
+                                          _passwordController.text.trim(),
+                                        );
                                   } else {
-                                    await ref.read(authProvider.notifier).register(
-                                      _nameController.text.trim(),
-                                      _emailController.text.trim(),
-                                      _passwordController.text.trim(),
-                                      _role,
-                                    );
+                                    await ref
+                                        .read(authhProvider.notifier)
+                                        .register(
+                                          _nameController.text.trim(),
+                                          _emailController.text.trim(),
+                                          _passwordController.text.trim(),
+                                          _role,
+                                        );
                                   }
                                 }
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.leakukuGreen,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         child: authState.isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
                             : Text(
                                 _isLogin ? 'LOGIN' : 'REGISTER',
-                                style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                       ),
                     ),
@@ -227,7 +245,9 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                         });
                       },
                       child: Text(
-                        _isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login',
+                        _isLogin
+                            ? 'Don\'t have an account? Register'
+                            : 'Already have an account? Login',
                         style: const TextStyle(color: Color(0xFFFF9800)),
                       ),
                     ),

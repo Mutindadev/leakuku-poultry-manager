@@ -1,4 +1,4 @@
-package com.example.leakuku
+package com.eltopu.leakuku
 
 import io.flutter.embedding.android.FlutterActivity
 

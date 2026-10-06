@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1068523060393-qajkv4jlu450j4v4n7e20cn8cumdgsck.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1068523060393-qajkv4jlu450j4v4n7e20cn8cumdgsck</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBEBGdhJJfwuVgneO1qLleOLhh4yD3QJZw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1068523060393</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.eltopu.leakuku</string>
+	<key>PROJECT_ID</key>
+	<string>leakuku-7312b</string>
+	<key>STORAGE_BUCKET</key>
+	<string>leakuku-7312b.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1068523060393:ios:28908fb3cf51a5e1013db8</string>
+</dict>
+</plist>
