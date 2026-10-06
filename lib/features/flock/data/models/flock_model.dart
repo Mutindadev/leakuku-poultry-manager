@@ -206,19 +206,19 @@ class FlockModel extends HiveObject {
           ? DateTime.fromMillisecondsSinceEpoch(map['expectedEndDate'] as int)
           : null,
       vaccineIds: map['vaccineIds'] != null
-          ? List<String>.from((map['vaccineIds'] as List<String>))
+          ? List<String>.from(map['vaccineIds'] as List)
           : null,
       weeklyPlanIds: map['weeklyPlanIds'] != null
-          ? List<String>.from((map['weeklyPlanIds'] as List<String>))
+          ? List<String>.from(map['weeklyPlanIds'] as List)
           : null,
       dailyRecordsIds: map['dailyRecordsIds'] != null
-          ? List<String>.from((map['dailyRecordsIds'] as List<String>))
+          ? List<String>.from(map['dailyRecordsIds'] as List)
           : null,
       stockItemIds: map['stockItemIds'] != null
-          ? List<String>.from((map['stockItemIds'] as List<String>))
+          ? List<String>.from(map['stockItemIds'] as List)
           : null,
       financeTransactionIds: map['financeTransactionIds'] != null
-          ? List<String>.from((map['financeTransactionIds'] as List<String>))
+          ? List<String>.from(map['financeTransactionIds'] as List)
           : null,
       currentWeek: map['currentWeek'] as String,
       mortalityPercent: map['mortalityPercent'] as String,

@@ -267,7 +267,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                   }
 
                   final flock = FlockModel(
-                    id: widget.existing?.id ?? UniqueKey().toString(),
+                    id: widget.existing?.id ??
+                        'flock_${userId}_${DateTime.now().microsecondsSinceEpoch}',
                     name: _nameController.text.trim(),
                     breed: _selectedBreed,
                     quantity: int.parse(_quantityController.text.trim()),
@@ -322,6 +323,7 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                       );
 
                       await generateWeeklyPlanUseCase.execute(
+                        userId: userId,
                         flockId: flock.id,
                         breedId: breedId,
                         flockQuantity: flock.quantity,
@@ -338,6 +340,7 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
                       );
 
                       await generateVaccineScheduleUseCase.execute(
+                        userId: userId,
                         flockId: flock.id,
                         breedId: breedId,
                         flockStartDate: flock.purchaseDate,

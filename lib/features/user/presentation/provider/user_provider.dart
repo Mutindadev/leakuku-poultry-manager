@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/firestore_data_providers.dart';
 import 'package:leakuku/features/auth/data/data_sources/remote_implementation.dart';
 import 'package:leakuku/features/auth/data/repositories/auth_implementation.dart';
 import 'package:leakuku/features/auth/domain/use_case/password_reset.dart';
@@ -103,10 +105,16 @@ class UserNotifier extends StateNotifier<UserState> {
 
   Box<UserModel>? _userBox;
   StreamSubscription<User?>? _authSubscription;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  Timer? _backupTimer;
 
   UserNotifier(this.ref) : super(const UserState()) {
     Future.microtask(_initializeHive);
     _listenToAuthChanges();
+    _backupTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) _syncUserData(uid);
+    });
   }
 
   Future<void> _initializeHive() async {
@@ -147,9 +155,26 @@ class UserNotifier extends StateNotifier<UserState> {
       if (user == null) {
         _handleSignOut();
       } else {
+        _syncUserData(user.uid);
         // handleSignIn(user);
       }
     });
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+      (result) {
+        if (result != ConnectivityResult.none) {
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          if (uid != null) _syncUserData(uid);
+        }
+      },
+    );
+  }
+
+  Future<void> _syncUserData(String uid) async {
+    try {
+      await ref.read(firestoreBackupServiceProvider).syncUser(uid);
+    } catch (error) {
+      debugPrint('Firestore backup sync will retry later: $error');
+    }
   }
 
   // Future<void> handleSignIn(User user) async {
@@ -393,6 +418,8 @@ class UserNotifier extends StateNotifier<UserState> {
   @override
   void dispose() {
     _authSubscription?.cancel();
+    _connectivitySubscription?.cancel();
+    _backupTimer?.cancel();
     _userBox?.close();
     super.dispose();
   }

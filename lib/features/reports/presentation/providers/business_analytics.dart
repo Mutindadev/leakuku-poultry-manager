@@ -116,11 +116,7 @@ class BusinessAnalyticsNotifier extends StateNotifier<BusinessAnalyticsState> {
         continue;
       }
 
-      final flockKey = item.flockId?.trim();
-
-      if (flockKey == null || flockKey.isEmpty) {
-        continue;
-      }
+      final flockKey = item.flockId.trim();
 
       if (item.transactionType == 'income') {
         flockRevenue[flockKey] = (flockRevenue[flockKey] ?? 0) + item.amount;

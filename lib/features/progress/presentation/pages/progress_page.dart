@@ -10,6 +10,7 @@ import 'package:leakuku/features/progress/presentation/widgets/empty_daily_recor
 import 'package:leakuku/features/progress/presentation/widgets/header_card.dart';
 import 'package:leakuku/features/progress/presentation/widgets/plan_card.dart';
 import 'package:leakuku/features/progress/presentation/widgets/record_card.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 
@@ -318,9 +319,10 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
           updatedAt: DateTime.now(),
         );
 
-        await ref
-            .read(weeklyPlanDataSourceProvider)
-            .updateWeekActuals(updatedPlan);
+        await ref.read(weeklyPlanDataSourceProvider).updateWeekActuals(
+              ref.read(userProvider).userModel!.uid,
+              updatedPlan,
+            );
       }
 
       ref.invalidate(weeklyPlansProvider(flock.id));

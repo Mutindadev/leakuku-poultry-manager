@@ -8,7 +8,9 @@ import 'package:leakuku/core/theme/app_theme.dart';
 import 'package:leakuku/data/datasources/breed_local_data_source.dart';
 import 'package:leakuku/data/models/breed_model.dart';
 import 'package:leakuku/data/models/financial_transaction_model.dart';
+import 'package:leakuku/data/models/stock_history_model.dart';
 import 'package:leakuku/data/models/stock_item_model.dart';
+import 'package:leakuku/data/models/weekly_plan_model.dart';
 import 'package:leakuku/features/auth/presentation/login_register_page.dart';
 import 'package:leakuku/features/finances/presentation/pages/farm_finances_page.dart';
 import 'package:leakuku/features/flock/data/models/flock_model.dart';
@@ -56,12 +58,13 @@ void main() async {
 
   // Open boxes
   await Hive.openBox<UserModel>('userBox');
+  await Hive.openBox<Map<dynamic, dynamic>>('firestoreSyncQueue');
   await Hive.openBox<FlockModel>('flockBox');
   final breedBox = await Hive.openBox<BreedModel>('breedBox');
   await Hive.openBox<List<dynamic>>('vaccineBox');
-  await Hive.openBox<List<dynamic>>('weeklyPlanBox');
+  await Hive.openBox<List<WeeklyPlanModel>>('weeklyPlanBox');
   await Hive.openBox<StockItemModel>('stockItemBox');
-  await Hive.openBox<List<dynamic>>('stockHistoryBox');
+  await Hive.openBox<List<StockHistoryModel>>('stockHistoryBox');
   await Hive.openBox<FinancialTransactionModel>('farmFinanceTransactionBox');
 
   // Seed default breeds

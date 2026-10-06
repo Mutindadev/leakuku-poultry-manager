@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/services/firestore_collection_data_source.dart';
+import 'package:leakuku/core/services/firestore_sync_queue.dart';
 import 'package:leakuku/data/models/breed_model.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
 
@@ -12,6 +14,7 @@ abstract class WeeklyPlanLocalDataSource {
 
   /// Auto-generate weekly plans for a flock based on breed defaults
   Future<List<WeeklyPlanModel>> generateWeeklyPlans({
+    required String userId,
     required String flockId,
     required BreedModel breed,
     required int flockQuantity,
@@ -19,18 +22,21 @@ abstract class WeeklyPlanLocalDataSource {
   });
 
   /// Update actual values for a specific week (farmer input)
-  Future<void> updateWeekActuals(WeeklyPlanModel updatedPlan);
+  Future<void> updateWeekActuals(String userId, WeeklyPlanModel updatedPlan);
 
   /// Delete all plans for a flock (when flock deleted)
-  Future<void> deleteWeeklyPlans(String flockId);
+  Future<void> deleteWeeklyPlans(String userId, String flockId);
 }
 
 class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
-  final Box<List<dynamic>>
+  final Box<List<WeeklyPlanModel>>
       _weeklyPlanBox; // Store List<WeeklyPlanModel> per flockId
+  final FirestoreSyncQueue? syncQueue;
 
-  WeeklyPlanLocalDataSourceImpl({required Box<List<dynamic>> weeklyPlanBox})
-      : _weeklyPlanBox = weeklyPlanBox;
+  WeeklyPlanLocalDataSourceImpl({
+    required Box<List<WeeklyPlanModel>> weeklyPlanBox,
+    this.syncQueue,
+  }) : _weeklyPlanBox = weeklyPlanBox;
 
   @override
   Future<List<WeeklyPlanModel>> getWeeklyPlansForFlock(String flockId) async {
@@ -41,7 +47,9 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
     final rawList = _weeklyPlanBox.get(flockId);
     if (rawList == null) return [];
 
-    return rawList.whereType<WeeklyPlanModel>().toList();
+    final plans = rawList.whereType<WeeklyPlanModel>().toList()
+      ..sort((a, b) => a.weekNumber.compareTo(b.weekNumber));
+    return plans;
   }
 
   @override
@@ -56,6 +64,7 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
   @override
   Future<List<WeeklyPlanModel>> generateWeeklyPlans({
+    required String userId,
     required String flockId,
     required BreedModel breed,
     required int flockQuantity,
@@ -110,12 +119,25 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
     // Save to Hive
     await _weeklyPlanBox.put(flockId, plans);
+    for (final plan in plans) {
+      await syncQueue?.upsert(
+        uid: userId,
+        collection: FirestoreCollections.weeklyPlans,
+        id: plan.id,
+        data: plan.toMap(),
+        parentCollection: FirestoreCollections.flocks,
+        parentId: flockId,
+      );
+    }
 
     return plans;
   }
 
   @override
-  Future<void> updateWeekActuals(WeeklyPlanModel updatedPlan) async {
+  Future<void> updateWeekActuals(
+    String userId,
+    WeeklyPlanModel updatedPlan,
+  ) async {
     if (!Hive.isBoxOpen('weeklyPlanBox')) {
       throw Exception('Weekly plan box not initialized');
     }
@@ -130,15 +152,33 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
     plans[index] = updatedPlan;
     await _weeklyPlanBox.put(updatedPlan.flockId, plans);
+    await syncQueue?.upsert(
+      uid: userId,
+      collection: FirestoreCollections.weeklyPlans,
+      id: updatedPlan.id,
+      data: updatedPlan.toMap(),
+      parentCollection: FirestoreCollections.flocks,
+      parentId: updatedPlan.flockId,
+    );
   }
 
   @override
-  Future<void> deleteWeeklyPlans(String flockId) async {
+  Future<void> deleteWeeklyPlans(String userId, String flockId) async {
     if (!Hive.isBoxOpen('weeklyPlanBox')) {
       throw Exception('Weekly plan box not initialized');
     }
 
+    final plans = await getWeeklyPlansForFlock(flockId);
     await _weeklyPlanBox.delete(flockId);
+    for (final plan in plans) {
+      await syncQueue?.delete(
+        uid: userId,
+        collection: FirestoreCollections.weeklyPlans,
+        id: plan.id,
+        parentCollection: FirestoreCollections.flocks,
+        parentId: flockId,
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────────

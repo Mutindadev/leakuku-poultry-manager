@@ -1,13 +1,21 @@
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/services/firestore_collection_data_source.dart';
+import 'package:leakuku/core/services/firestore_sync_queue.dart';
 import 'package:leakuku/data/models/stock_history_model.dart';
 import 'package:leakuku/data/models/stock_item_model.dart';
 
 abstract class StockLocalDataSource {
   Future<void> seedDefaultStock();
-  Future<List<StockItemModel>> getAllItems();
-  Future<List<StockItemModel>> getItemsByCategory(String category);
-  Future<List<StockHistoryModel>> getItemHistory(String itemId);
+  Future<List<StockItemModel>> getAllItems(String userId);
+  Future<List<StockItemModel>> getItemsByCategory(
+    String userId,
+    String category,
+  );
+  Future<List<StockHistoryModel>> getItemHistory(String userId, String itemId);
+  Future<void> updateItem(String userId, StockItemModel item);
+  Future<void> deleteItem(String userId, String itemId);
   Future<void> addStock({
+    required String userId,
     required String category,
     required String itemName,
     required double quantity,
@@ -20,6 +28,7 @@ abstract class StockLocalDataSource {
     String? notes,
   });
   Future<void> useStock({
+    required String userId,
     required String itemId,
     required double quantityUsed,
     required DateTime date,
@@ -29,11 +38,13 @@ abstract class StockLocalDataSource {
 
 class StockLocalDataSourceImpl implements StockLocalDataSource {
   final Box<StockItemModel> _stockItemBox;
-  final Box<List<dynamic>> _stockHistoryBox;
+  final Box<List<StockHistoryModel>> _stockHistoryBox;
+  final FirestoreSyncQueue? syncQueue;
 
   StockLocalDataSourceImpl({
     required Box<StockItemModel> stockItemBox,
-    required Box<List<dynamic>> stockHistoryBox,
+    required Box<List<StockHistoryModel>> stockHistoryBox,
+    this.syncQueue,
   })  : _stockItemBox = stockItemBox,
         _stockHistoryBox = stockHistoryBox;
 
@@ -44,8 +55,10 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
   }
 
   @override
-  Future<List<StockItemModel>> getAllItems() async {
-    final items = _stockItemBox.values.toList();
+  Future<List<StockItemModel>> getAllItems(String userId) async {
+    await _adoptLegacyRows(userId);
+    final items =
+        _stockItemBox.values.where((item) => item.userId == userId).toList();
     items.sort((a, b) {
       final categoryCompare = a.category.compareTo(b.category);
       if (categoryCompare != 0) {
@@ -57,25 +70,35 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
   }
 
   @override
-  Future<List<StockItemModel>> getItemsByCategory(String category) async {
-    final all = await getAllItems();
+  Future<List<StockItemModel>> getItemsByCategory(
+    String userId,
+    String category,
+  ) async {
+    final all = await getAllItems(userId);
     return all.where((item) => item.category == category).toList();
   }
 
   @override
-  Future<List<StockHistoryModel>> getItemHistory(String itemId) async {
+  Future<List<StockHistoryModel>> getItemHistory(
+    String userId,
+    String itemId,
+  ) async {
     final rawList = _stockHistoryBox.get(itemId);
     if (rawList == null) {
       return [];
     }
 
-    final history = rawList.whereType<StockHistoryModel>().toList();
+    final history = rawList
+        .whereType<StockHistoryModel>()
+        .where((entry) => entry.userId == userId)
+        .toList();
     history.sort((a, b) => b.date.compareTo(a.date));
     return history;
   }
 
   @override
   Future<void> addStock({
+    required String userId,
     required String category,
     required String itemName,
     required double quantity,
@@ -93,6 +116,7 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
 
     final existing = _stockItemBox.values.firstWhere(
       (item) =>
+          item.userId == userId &&
           item.category.toLowerCase() == category.toLowerCase() &&
           item.name.toLowerCase() == itemName.toLowerCase(),
       orElse: () => StockItemModel(
@@ -103,11 +127,12 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
         unit: unit,
         minimumLevel: minimumLevel ?? _defaultMinimumLevel(category, unit),
         lastUpdated: date,
+        userId: userId,
       ),
     );
 
     final itemId = existing.id.isEmpty
-        ? '${_slug(category)}_${_slug(itemName)}'
+        ? '${userId}_${_slug(category)}_${_slug(itemName)}'
         : existing.id;
 
     final currentQuantity = existing.id.isEmpty ? 0.0 : existing.quantity;
@@ -125,9 +150,16 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
       expiryDate: expiryDate ?? existing.expiryDate,
       supplier: supplier ?? existing.supplier,
       cost: cost ?? existing.cost,
+      userId: userId,
     );
 
     await _stockItemBox.put(updatedItem.id, updatedItem);
+    await syncQueue?.upsert(
+      uid: userId,
+      collection: FirestoreCollections.stockItems,
+      id: updatedItem.id,
+      data: updatedItem.toMap(),
+    );
     await _appendHistory(
       StockHistoryModel(
         id: '${updatedItem.id}_${date.microsecondsSinceEpoch}_add',
@@ -140,12 +172,14 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
         date: date,
         balanceAfter: updatedItem.quantity,
         notes: notes,
+        userId: userId,
       ),
     );
   }
 
   @override
   Future<void> useStock({
+    required String userId,
     required String itemId,
     required double quantityUsed,
     required DateTime date,
@@ -156,7 +190,7 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
     }
 
     final existing = _stockItemBox.get(itemId);
-    if (existing == null) {
+    if (existing == null || existing.userId != userId) {
       throw Exception('Stock item not found.');
     }
 
@@ -175,9 +209,16 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
       expiryDate: existing.expiryDate,
       supplier: existing.supplier,
       cost: existing.cost,
+      userId: userId,
     );
 
     await _stockItemBox.put(updatedItem.id, updatedItem);
+    await syncQueue?.upsert(
+      uid: userId,
+      collection: FirestoreCollections.stockItems,
+      id: updatedItem.id,
+      data: updatedItem.toMap(),
+    );
     await _appendHistory(
       StockHistoryModel(
         id: '${updatedItem.id}_${date.microsecondsSinceEpoch}_use',
@@ -190,7 +231,50 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
         date: date,
         balanceAfter: updatedItem.quantity,
         notes: notes,
+        userId: userId,
       ),
+    );
+  }
+
+  @override
+  Future<void> deleteItem(String userId, String itemId) async {
+    final item = _stockItemBox.get(itemId);
+    if (item == null || item.userId != userId) return;
+
+    final history = await getItemHistory(userId, itemId);
+    await _stockItemBox.delete(itemId);
+    await _stockHistoryBox.delete(itemId);
+    await syncQueue?.delete(
+      uid: userId,
+      collection: FirestoreCollections.stockItems,
+      id: itemId,
+    );
+    for (final entry in history) {
+      await syncQueue?.delete(
+        uid: userId,
+        collection: FirestoreCollections.stockHistory,
+        id: entry.id,
+      );
+    }
+  }
+
+  @override
+  Future<void> updateItem(String userId, StockItemModel item) async {
+    final existing = _stockItemBox.get(item.id);
+    if (existing == null || existing.userId != userId) {
+      throw StateError('Stock item not found.');
+    }
+
+    final updatedItem = item.copyWith(
+      userId: userId,
+      lastUpdated: DateTime.now(),
+    );
+    await _stockItemBox.put(updatedItem.id, updatedItem);
+    await syncQueue?.upsert(
+      uid: userId,
+      collection: FirestoreCollections.stockItems,
+      id: updatedItem.id,
+      data: updatedItem.toMap(),
     );
   }
 
@@ -199,6 +283,38 @@ class StockLocalDataSourceImpl implements StockLocalDataSource {
     final typed = rawList.whereType<StockHistoryModel>().toList();
     typed.add(historyItem);
     await _stockHistoryBox.put(historyItem.itemId, typed);
+    await syncQueue?.upsert(
+      uid: historyItem.userId,
+      collection: FirestoreCollections.stockHistory,
+      id: historyItem.id,
+      data: historyItem.toMap(),
+    );
+  }
+
+  Future<void> _adoptLegacyRows(String userId) async {
+    if (userId.isEmpty) return;
+
+    for (final item
+        in _stockItemBox.values.where((item) => item.userId.isEmpty).toList()) {
+      final newId = '${userId}_${item.id}';
+      final migratedItem = item.copyWith(id: newId, userId: userId);
+      final oldHistory = _stockHistoryBox.get(item.id) ?? const <dynamic>[];
+      final migratedHistory = oldHistory
+          .whereType<StockHistoryModel>()
+          .map((entry) => entry.copyWith(
+                id: '${userId}_${entry.id}',
+                itemId: newId,
+                userId: userId,
+              ))
+          .toList();
+
+      await _stockItemBox.delete(item.id);
+      await _stockItemBox.put(newId, migratedItem);
+      await _stockHistoryBox.delete(item.id);
+      if (migratedHistory.isNotEmpty) {
+        await _stockHistoryBox.put(newId, migratedHistory);
+      }
+    }
   }
 
   double _defaultMinimumLevel(String category, String unit) {

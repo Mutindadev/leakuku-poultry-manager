@@ -42,6 +42,9 @@ class StockHistoryModel extends HiveObject {
   @HiveField(StockHistoryModelFields.notes)
   String? notes;
 
+  @HiveField(StockHistoryModelFields.userId)
+  String userId;
+
   StockHistoryModel({
     required this.id,
     required this.itemId,
@@ -53,6 +56,7 @@ class StockHistoryModel extends HiveObject {
     required this.date,
     required this.balanceAfter,
     this.notes,
+    this.userId = '',
   });
 
   StockHistoryModel copyWith({
@@ -66,6 +70,7 @@ class StockHistoryModel extends HiveObject {
     DateTime? date,
     double? balanceAfter,
     String? notes,
+    String? userId,
   }) {
     return StockHistoryModel(
       id: id ?? this.id,
@@ -78,6 +83,7 @@ class StockHistoryModel extends HiveObject {
       date: date ?? this.date,
       balanceAfter: balanceAfter ?? this.balanceAfter,
       notes: notes ?? this.notes,
+      userId: userId ?? this.userId,
     );
   }
 
@@ -93,6 +99,7 @@ class StockHistoryModel extends HiveObject {
       'date': date.millisecondsSinceEpoch,
       'balanceAfter': balanceAfter,
       'notes': notes,
+      'userId': userId,
     };
   }
 
@@ -108,6 +115,7 @@ class StockHistoryModel extends HiveObject {
       date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
       balanceAfter: map['balanceAfter'] as double,
       notes: map['notes'] != null ? map['notes'] as String : null,
+      userId: map['userId'] as String? ?? '',
     );
   }
 
@@ -118,7 +126,7 @@ class StockHistoryModel extends HiveObject {
 
   @override
   String toString() {
-    return 'StockHistoryModel(id: $id, itemId: $itemId, category: $category, itemName: $itemName, action: $action, quantity: $quantity, unit: $unit, date: $date, balanceAfter: $balanceAfter, notes: $notes)';
+    return 'StockHistoryModel(id: $id, itemId: $itemId, category: $category, itemName: $itemName, action: $action, quantity: $quantity, unit: $unit, date: $date, balanceAfter: $balanceAfter, notes: $notes, userId: $userId)';
   }
 
   @override
@@ -134,7 +142,8 @@ class StockHistoryModel extends HiveObject {
         other.unit == unit &&
         other.date == date &&
         other.balanceAfter == balanceAfter &&
-        other.notes == notes;
+        other.notes == notes &&
+        other.userId == userId;
   }
 
   @override
@@ -148,6 +157,7 @@ class StockHistoryModel extends HiveObject {
         unit.hashCode ^
         date.hashCode ^
         balanceAfter.hashCode ^
-        notes.hashCode;
+        notes.hashCode ^
+        userId.hashCode;
   }
 }

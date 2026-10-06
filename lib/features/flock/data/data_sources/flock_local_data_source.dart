@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/services/firestore_collection_data_source.dart';
+import 'package:leakuku/core/services/firestore_sync_queue.dart';
 import 'package:leakuku/features/flock/data/models/flock_model.dart';
 
 abstract class FlockLocalDataSource {
@@ -11,8 +13,9 @@ abstract class FlockLocalDataSource {
 
 class FlockLocalDataSourceImpl implements FlockLocalDataSource {
   final Box<FlockModel> flockBox;
+  final FirestoreSyncQueue? syncQueue;
 
-  FlockLocalDataSourceImpl({required this.flockBox});
+  FlockLocalDataSourceImpl({required this.flockBox, this.syncQueue});
 
   @override
   Future<List<FlockModel>> getAllFlocks(String userId) async {
@@ -31,15 +34,35 @@ class FlockLocalDataSourceImpl implements FlockLocalDataSource {
   @override
   Future<void> addFlock(FlockModel flock) async {
     await flockBox.put(flock.id, flock);
+    await syncQueue?.upsert(
+      uid: flock.userId,
+      collection: FirestoreCollections.flocks,
+      id: flock.id,
+      data: flock.toMap(),
+    );
   }
 
   @override
   Future<void> updateFlock(FlockModel flock) async {
     await flockBox.put(flock.id, flock);
+    await syncQueue?.upsert(
+      uid: flock.userId,
+      collection: FirestoreCollections.flocks,
+      id: flock.id,
+      data: flock.toMap(),
+    );
   }
 
   @override
   Future<void> deleteFlock(String id) async {
+    final flock = flockBox.get(id);
     await flockBox.delete(id);
+    if (flock != null) {
+      await syncQueue?.delete(
+        uid: flock.userId,
+        collection: FirestoreCollections.flocks,
+        id: id,
+      );
+    }
   }
 }

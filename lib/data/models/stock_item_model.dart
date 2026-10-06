@@ -40,6 +40,9 @@ class StockItemModel extends HiveObject {
   @HiveField(StockItemModelFields.cost)
   double? cost;
 
+  @HiveField(StockItemModelFields.userId)
+  String userId;
+
   StockItemModel({
     required this.id,
     required this.category,
@@ -51,6 +54,7 @@ class StockItemModel extends HiveObject {
     this.expiryDate,
     this.supplier,
     this.cost,
+    this.userId = '',
   });
 
   bool get isLowStock => quantity <= minimumLevel;
@@ -66,6 +70,7 @@ class StockItemModel extends HiveObject {
     DateTime? expiryDate,
     String? supplier,
     double? cost,
+    String? userId,
   }) {
     return StockItemModel(
       id: id ?? this.id,
@@ -78,6 +83,7 @@ class StockItemModel extends HiveObject {
       expiryDate: expiryDate ?? this.expiryDate,
       supplier: supplier ?? this.supplier,
       cost: cost ?? this.cost,
+      userId: userId ?? this.userId,
     );
   }
 
@@ -93,6 +99,7 @@ class StockItemModel extends HiveObject {
       'expiryDate': expiryDate?.millisecondsSinceEpoch,
       'supplier': supplier,
       'cost': cost,
+      'userId': userId,
     };
   }
 
@@ -111,6 +118,7 @@ class StockItemModel extends HiveObject {
           : null,
       supplier: map['supplier'] != null ? map['supplier'] as String : null,
       cost: map['cost'] != null ? map['cost'] as double : null,
+      userId: map['userId'] as String? ?? '',
     );
   }
 
@@ -121,7 +129,7 @@ class StockItemModel extends HiveObject {
 
   @override
   String toString() {
-    return 'StockItemModel(id: $id, category: $category, name: $name, quantity: $quantity, unit: $unit, minimumLevel: $minimumLevel, lastUpdated: $lastUpdated, expiryDate: $expiryDate, supplier: $supplier, cost: $cost)';
+    return 'StockItemModel(id: $id, category: $category, name: $name, quantity: $quantity, unit: $unit, minimumLevel: $minimumLevel, lastUpdated: $lastUpdated, expiryDate: $expiryDate, supplier: $supplier, cost: $cost, userId: $userId)';
   }
 
   @override
@@ -137,7 +145,8 @@ class StockItemModel extends HiveObject {
         other.lastUpdated == lastUpdated &&
         other.expiryDate == expiryDate &&
         other.supplier == supplier &&
-        other.cost == cost;
+        other.cost == cost &&
+        other.userId == userId;
   }
 
   @override
@@ -151,6 +160,7 @@ class StockItemModel extends HiveObject {
         lastUpdated.hashCode ^
         expiryDate.hashCode ^
         supplier.hashCode ^
-        cost.hashCode;
+        cost.hashCode ^
+        userId.hashCode;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/firestore_data_providers.dart';
 import 'package:leakuku/data/datasources/financial_transaction_local_data_source.dart';
 import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/features/finances/data/financial_transaction_repository.dart';
@@ -29,7 +30,10 @@ const List<String> expenseCategories = [
 final financialTransactionLocalDataSourceProvider =
     Provider<FinancialTransactionLocalDataSource>((ref) {
   final box = Hive.box<FinancialTransactionModel>('farmFinanceTransactionBox');
-  return FinancialTransactionLocalDataSourceImpl(transactionBox: box);
+  return FinancialTransactionLocalDataSourceImpl(
+    transactionBox: box,
+    syncQueue: ref.watch(firestoreSyncQueueProvider),
+  );
 });
 
 final financialTransactionRepositoryProvider =

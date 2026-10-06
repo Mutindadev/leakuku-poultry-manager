@@ -1,17 +1,80 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:leakuku/data/models/vaccine_model.dart'; // Updated import
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   final Map<String, Set<int>> _flockNotificationIds = <String, Set<int>>{};
+  static const int _syncNotificationId = 42001;
+  Future<bool>? _permissionRequest;
 
   Future<void> initialize() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
-    const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
-    
+    const settings =
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
+
     await _notificationsPlugin.initialize(settings);
+  }
+
+  Future<void> showSyncProgress({
+    required int progressPercent,
+    required String status,
+  }) async {
+    _permissionRequest ??= _requestNotificationPermission();
+    if (!await _permissionRequest!) return;
+
+    final progress = progressPercent.clamp(0, 100).toInt();
+    await _notificationsPlugin.show(
+      _syncNotificationId,
+      'Backing up farm data',
+      '$status ($progress%)',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'farm_data_sync',
+          'Farm data sync',
+          channelDescription: 'Progress of local farm data backup',
+          importance: Importance.low,
+          priority: Priority.low,
+          showProgress: true,
+          maxProgress: 100,
+          progress: progress,
+          ongoing: true,
+          onlyAlertOnce: true,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: false,
+        ),
+      ),
+    );
+  }
+
+  Future<void> cancelSyncProgress() =>
+      _notificationsPlugin.cancel(_syncNotificationId);
+
+  Future<bool> _requestNotificationPermission() async {
+    final android = _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      return await android.requestNotificationsPermission() ?? false;
+    }
+
+    final ios = _notificationsPlugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    if (ios != null) {
+      return await ios.requestPermissions(
+            alert: true,
+            badge: false,
+            sound: false,
+          ) ??
+          false;
+    }
+
+    return true;
   }
 
   /// Schedule vaccine reminders: 1 day before + on the day
@@ -21,7 +84,7 @@ class NotificationService {
     required DateTime vaccineDate,
   }) async {
     final oneDayBefore = vaccineDate.subtract(const Duration(days: 1));
-    
+
     // Notification ID = hash of flockId + vaccine.id + offset
     final reminderIdBefore = '${flockId}_${vaccine.id}_before'.hashCode;
     final reminderIdDay = '${flockId}_${vaccine.id}_day'.hashCode;
@@ -33,7 +96,8 @@ class NotificationService {
       reminderIdBefore,
       '🩺 Vaccination Tomorrow: ${vaccine.vaccineName}',
       'Prepare for ${vaccine.disease} vaccination on ${_formatDate(vaccineDate)}',
-      _toTZDateTime(oneDayBefore.add(const Duration(hours: 9))), // 9 AM reminder
+      _toTZDateTime(
+          oneDayBefore.add(const Duration(hours: 9))), // 9 AM reminder
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'vaccine_reminders',
@@ -44,7 +108,8 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
 
     // Schedule on the day
@@ -63,7 +128,8 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -82,7 +148,9 @@ class NotificationService {
   }
 
   void _trackNotificationId(String flockId, int notificationId) {
-    _flockNotificationIds.putIfAbsent(flockId, () => <int>{}).add(notificationId);
+    _flockNotificationIds
+        .putIfAbsent(flockId, () => <int>{})
+        .add(notificationId);
   }
 
   // Helper: Format date (requires intl package)

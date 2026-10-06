@@ -97,7 +97,7 @@ class BreedModel extends HiveObject {
       id: map['id'] as String,
       name: map['name'] as String,
       purpose: map['purpose'] as String,
-      keyBenefits: List<String>.from((map['keyBenefits'] as List<String>)),
+      keyBenefits: List<String>.from(map['keyBenefits'] as List),
       weeklyExpectedWeight: Map<dynamic, dynamic>.from(
           (map['weeklyExpectedWeight'] as Map<dynamic, dynamic>)),
       weeklyFeedGrams: Map<dynamic, dynamic>.from(

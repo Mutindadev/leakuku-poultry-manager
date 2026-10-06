@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/firestore_data_providers.dart';
 // Models
 import 'package:leakuku/domain/repositories/flock_repository.dart';
 import 'package:leakuku/features/auth/data/data_sources/remote.dart';
@@ -38,7 +39,10 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final flockLocalDataSourceProvider = Provider<FlockLocalDataSource>((ref) {
   final flockBox = ref.watch(flockBoxProvider);
-  return FlockLocalDataSourceImpl(flockBox: flockBox);
+  return FlockLocalDataSourceImpl(
+    flockBox: flockBox,
+    syncQueue: ref.watch(firestoreSyncQueueProvider),
+  );
 });
 
 // === Repositories ===

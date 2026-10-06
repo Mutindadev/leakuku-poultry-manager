@@ -19,5 +19,11 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "chat.tools.terminal.autoApprove": {
+      "/^python3 -m json\\.tool firebase\\.json$/": {
+        "approve": true,
+        "matchCommandLine": true
+      }
+    }
 }
