@@ -35,7 +35,7 @@ class FlockNotifier extends StateNotifier<FlockState> {
   Future<void> loadFlocks() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final authState = ref.read(authProvider);
+      final authState = ref.read(authhProvider);
       final userId = authState.user?.id ?? '';
 
       final dataSource = ref.read(flockLocalDataSourceProvider);

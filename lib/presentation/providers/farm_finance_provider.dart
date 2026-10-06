@@ -34,7 +34,8 @@ final financialTransactionLocalDataSourceProvider =
 
 final financialTransactionRepositoryProvider =
     Provider<FinancialTransactionRepository>((ref) {
-  final localDataSource = ref.watch(financialTransactionLocalDataSourceProvider);
+  final localDataSource =
+      ref.watch(financialTransactionLocalDataSourceProvider);
   return FinancialTransactionRepositoryImpl(localDataSource: localDataSource);
 });
 
@@ -76,7 +77,7 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
   Future<void> loadTransactions() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final userId = ref.read(authProvider).user?.id;
+      final userId = ref.read(authhProvider).user?.id;
       if (userId == null || userId.isEmpty) {
         state = state.copyWith(transactions: const [], isLoading: false);
         return;
@@ -99,7 +100,7 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
     String? relatedFlock,
     String? paymentMethod,
   }) async {
-    final userId = ref.read(authProvider).user?.id;
+    final userId = ref.read(authhProvider).user?.id;
     if (userId == null || userId.isEmpty) {
       state = state.copyWith(error: 'User not found. Please log in again.');
       return;
@@ -124,7 +125,9 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
     );
 
     try {
-      await ref.read(financialTransactionRepositoryProvider).addTransaction(model);
+      await ref
+          .read(financialTransactionRepositoryProvider)
+          .addTransaction(model);
       await loadTransactions();
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -144,7 +147,9 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
 
   Future<void> deleteTransaction(String id) async {
     try {
-      await ref.read(financialTransactionRepositoryProvider).deleteTransaction(id);
+      await ref
+          .read(financialTransactionRepositoryProvider)
+          .deleteTransaction(id);
       await loadTransactions();
     } catch (e) {
       state = state.copyWith(error: e.toString());
