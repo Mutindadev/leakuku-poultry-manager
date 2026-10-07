@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/core/widgets/loading_card.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/widgets/guidance_card.dart';
 import 'package:leakuku/features/flock/presentation/widgets/stage_card.dart';
 import 'package:leakuku/features/flock/presentation/widgets/summary_grid.dart';

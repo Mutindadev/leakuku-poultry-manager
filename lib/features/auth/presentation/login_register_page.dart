@@ -1,8 +1,9 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class LoginRegisterPage extends ConsumerStatefulWidget {
   const LoginRegisterPage({super.key});
@@ -25,8 +26,8 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      final authState = ref.read(authhProvider);
-      if (!_redirected && authState.user != null) {
+      final auth = ref.read(userProvider);
+      if (!_redirected && auth.userModel != null) {
         _redirected = true;
         Navigator.of(context).pushReplacementNamed('/dashboard');
       }
@@ -80,29 +81,30 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authhProvider, (previous, next) {
-      if ((next.error ?? '').isNotEmpty) {
-        final isRegister = next.lastWasRegister == true;
-        final isInput = next.errorIsInput;
-        final bg = isInput
-            ? Colors.amber.shade800
-            : (isRegister ? Colors.orange.shade700 : Colors.red.shade700);
-        final prefix =
-            isInput ? 'Input' : (isRegister ? 'Registration' : 'Login');
+    ref.listen<UserState>(userProvider, (previous, next) {
+      if ((next.errorMessage ?? '').isNotEmpty) {
+        // final isRegister = next.lastWasRegister == true;
+        // final isInput = next.errorIsInput;
+        // final bg = isInput
+        //     ? Colors.amber.shade800
+        //     : (isRegister ? Colors.orange.shade700 : Colors.red.shade700);
+        // final prefix =
+        //     isInput ? 'Input' : (isRegister ? 'Registration' : 'Login');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$prefix error: ${next.error}'),
-            backgroundColor: bg,
+            // content: Text('$prefix error: ${next.errorMessage}'),
+            content: Text('Error: ${next.errorMessage}'),
+            backgroundColor: Colors.red.shade700,
           ),
         );
       }
-      if (next.user != null) {
+      if (next.userModel != null) {
         Navigator.of(context).pushReplacementNamed('/dashboard');
       }
     });
 
-    final authState = ref.watch(authhProvider);
+    final auth = ref.watch(userProvider);
 
     return Scaffold(
       backgroundColor: AppColors.farmCream,
@@ -196,25 +198,29 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: authState.isLoading
+                        onPressed: auth.isLoading
                             ? null
                             : () async {
+                                final fcmToken =
+                                    await FirebaseMessaging.instance.getToken();
+
                                 if (_formKey.currentState!.validate()) {
                                   if (_isLogin) {
                                     await ref
-                                        .read(authhProvider.notifier)
-                                        .login(
+                                        .read(userProvider.notifier)
+                                        .handleSignIn(
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
+                                          fcmToken,
                                         );
                                   } else {
                                     await ref
-                                        .read(authhProvider.notifier)
-                                        .register(
-                                          _nameController.text.trim(),
+                                        .read(userProvider.notifier)
+                                        .handleRegister(
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
-                                          _role,
+                                          _nameController.text.trim(),
+                                          fcmToken,
                                         );
                                   }
                                 }
@@ -224,7 +230,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: authState.isLoading
+                        child: auth.isLoading
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
                             : Text(

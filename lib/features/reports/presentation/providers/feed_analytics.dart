@@ -4,6 +4,7 @@ import 'package:leakuku/features/reports/data/models/feed_analytics_data.dart';
 import 'package:leakuku/features/reports/data/models/feed_usage_by_flock.dart';
 import 'package:leakuku/features/reports/domain/service/report_service.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/stock_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 
@@ -32,8 +33,7 @@ class FeedAnalyticsState {
   }
 }
 
-class FeedAnalyticsNotifier
-    extends StateNotifier<FeedAnalyticsState> {
+class FeedAnalyticsNotifier extends StateNotifier<FeedAnalyticsState> {
   final Ref ref;
   final ReportFilter filter;
 
@@ -70,6 +70,7 @@ class FeedAnalyticsNotifier
 
     final flocks = ref.read(flockProvider).flocks;
     final stockItems = await ref.read(stockItemsProvider.future);
+    final userId = ref.read(userProvider).userModel?.uid ?? '';
     final stockDataSource = ref.read(stockLocalDataSourceProvider);
     final weeklyPlanDataSource = ref.read(weeklyPlanDataSourceProvider);
     final periodBoundary = reportService.getBoundary(filter);
@@ -94,7 +95,7 @@ class FeedAnalyticsNotifier
 
     final feedHistoryLists = await Future.wait(
       feedItems.map(
-        (item) => stockDataSource.getItemHistory(item.id),
+        (item) => stockDataSource.getItemHistory(userId, item.id),
       ),
     );
 
@@ -136,8 +137,7 @@ class FeedAnalyticsNotifier
     final usageByFlock = <FeedUsageByFlock>[];
 
     for (final flock in flocks) {
-      final plans =
-          await weeklyPlanDataSource.getWeeklyPlansForFlock(flock.id);
+      final plans = await weeklyPlanDataSource.getWeeklyPlansForFlock(flock.id);
 
       final usedKg = plans
           .where(
@@ -176,8 +176,7 @@ class FeedAnalyticsNotifier
         .toList();
 
     return FeedAnalyticsData(
-      feedUsedInSelectedPeriodByUnit:
-          feedUsedInSelectedPeriodByUnit,
+      feedUsedInSelectedPeriodByUnit: feedUsedInSelectedPeriodByUnit,
       remainingFeedStockByUnit: remainingFeedStockByUnit,
       feedUsageByFlock: usageByFlock,
       feedUsageTrend: feedUsageTrend,
@@ -195,9 +194,7 @@ class FeedAnalyticsNotifier
 }
 
 final feedAnalyticsProvider = StateNotifierProvider.family<
-    FeedAnalyticsNotifier,
-    FeedAnalyticsState,
-    ReportFilter>(
+    FeedAnalyticsNotifier, FeedAnalyticsState, ReportFilter>(
   (ref, filter) {
     return FeedAnalyticsNotifier(ref, filter);
   },

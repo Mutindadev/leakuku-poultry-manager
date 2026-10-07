@@ -8,7 +8,7 @@ part of 'weekly_plan_model.dart';
 
 class WeeklyPlanModelAdapter extends TypeAdapter<WeeklyPlanModel> {
   @override
-  final int typeId = 12;
+  final int typeId = 1;
 
   @override
   WeeklyPlanModel read(BinaryReader reader) {
@@ -33,13 +33,14 @@ class WeeklyPlanModelAdapter extends TypeAdapter<WeeklyPlanModel> {
       actualTemperatureCelsius: fields[13] as double?,
       actualMortalityPercent: fields[14] as double?,
       weekStartDate: fields[15] as DateTime,
+      updatedAt: fields[16] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, WeeklyPlanModel obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -71,7 +72,9 @@ class WeeklyPlanModelAdapter extends TypeAdapter<WeeklyPlanModel> {
       ..writeByte(14)
       ..write(obj.actualMortalityPercent)
       ..writeByte(15)
-      ..write(obj.weekStartDate);
+      ..write(obj.weekStartDate)
+      ..writeByte(16)
+      ..write(obj.updatedAt);
   }
 
   @override

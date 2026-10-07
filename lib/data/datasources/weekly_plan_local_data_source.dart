@@ -1,46 +1,55 @@
 import 'package:hive/hive.dart';
-import 'package:leakuku/data/models/weekly_plan_model.dart';
+import 'package:leakuku/core/services/firestore_collection_data_source.dart';
+import 'package:leakuku/core/services/firestore_sync_queue.dart';
 import 'package:leakuku/data/models/breed_model.dart';
+import 'package:leakuku/data/models/weekly_plan_model.dart';
 
 /// Local data source for weekly activity plans (Hive-backed)
 abstract class WeeklyPlanLocalDataSource {
   /// Get all weekly plans for a specific flock
   Future<List<WeeklyPlanModel>> getWeeklyPlansForFlock(String flockId);
-  
+
   /// Get a specific week's plan
   Future<WeeklyPlanModel?> getWeekPlan(String flockId, int weekNumber);
-  
+
   /// Auto-generate weekly plans for a flock based on breed defaults
   Future<List<WeeklyPlanModel>> generateWeeklyPlans({
+    required String userId,
     required String flockId,
     required BreedModel breed,
     required int flockQuantity,
     required DateTime flockStartDate,
   });
-  
+
   /// Update actual values for a specific week (farmer input)
-  Future<void> updateWeekActuals(WeeklyPlanModel updatedPlan);
-  
+  Future<void> updateWeekActuals(String userId, WeeklyPlanModel updatedPlan);
+
   /// Delete all plans for a flock (when flock deleted)
-  Future<void> deleteWeeklyPlans(String flockId);
+  Future<void> deleteWeeklyPlans(String userId, String flockId);
 }
 
 class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
-  final Box<List<dynamic>> _weeklyPlanBox; // Store List<WeeklyPlanModel> per flockId
+  final Box<List<WeeklyPlanModel>>
+      _weeklyPlanBox; // Store List<WeeklyPlanModel> per flockId
+  final FirestoreSyncQueue? syncQueue;
 
-  WeeklyPlanLocalDataSourceImpl({required Box<List<dynamic>> weeklyPlanBox})
-      : _weeklyPlanBox = weeklyPlanBox;
+  WeeklyPlanLocalDataSourceImpl({
+    required Box<List<WeeklyPlanModel>> weeklyPlanBox,
+    this.syncQueue,
+  }) : _weeklyPlanBox = weeklyPlanBox;
 
   @override
   Future<List<WeeklyPlanModel>> getWeeklyPlansForFlock(String flockId) async {
     if (!Hive.isBoxOpen('weeklyPlanBox')) {
       throw Exception('Weekly plan box not initialized');
     }
-    
+
     final rawList = _weeklyPlanBox.get(flockId);
     if (rawList == null) return [];
-    
-    return rawList.whereType<WeeklyPlanModel>().toList();
+
+    final plans = rawList.whereType<WeeklyPlanModel>().toList()
+      ..sort((a, b) => a.weekNumber.compareTo(b.weekNumber));
+    return plans;
   }
 
   @override
@@ -55,6 +64,7 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
   @override
   Future<List<WeeklyPlanModel>> generateWeeklyPlans({
+    required String userId,
     required String flockId,
     required BreedModel breed,
     required int flockQuantity,
@@ -69,70 +79,106 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
     for (int week = 1; week <= totalWeeks; week++) {
       // Get feed grams per bird for this week (fallback to default if not in map)
-      final feedGramsPerBird = breed.weeklyFeedGrams[week] ?? breed.defaultFeedGramsPerWeek;
-      
+      final feedGramsPerBird =
+          (breed.weeklyFeedGrams[week] as num?)?.toDouble() ??
+              breed.defaultFeedGramsPerWeek;
+
       // Get expected body weight for this week (interpolate if missing)
       final bodyWeightKg = _getExpectedWeight(breed, week);
-      
+
       // Calculate planned totals
-      final totalFeedKg = (feedGramsPerBird * flockQuantity) / 1000; // Convert to kg
-      final waterLiters = (feedGramsPerBird * flockQuantity * 2.5) / 1000; // Water = feed * 2.5, convert ml to liters
-      
+      final totalFeedKg =
+          (feedGramsPerBird * flockQuantity) / 1000; // Convert to kg
+      final waterLiters = (feedGramsPerBird * flockQuantity * 2.5) /
+          1000; // Water = feed * 2.5, convert ml to liters
+
       // Temperature targets (decrease over weeks for broilers, stable for layers)
       final temperatureCelsius = _getTemperatureTarget(breed, week);
-      
+
       // Baseline mortality (start low, slight increase over time)
       final mortalityPercent = _getMortalityBaseline(breed, week);
-      
+
       // Week start date
       final weekStartDate = flockStartDate.add(Duration(days: (week - 1) * 7));
 
       final plan = WeeklyPlanModel(
-        id: '${flockId}_week$week',
-        flockId: flockId,
-        weekNumber: week,
-        plannedFeedGramsPerBird: feedGramsPerBird,
-        plannedTotalFeedKg: totalFeedKg,
-        plannedWaterLiters: waterLiters,
-        plannedBodyWeightKg: bodyWeightKg,
-        plannedTemperatureCelsius: temperatureCelsius,
-        plannedMortalityPercent: mortalityPercent,
-        weekStartDate: weekStartDate,
-      );
+          id: '${flockId}_week$week',
+          flockId: flockId,
+          weekNumber: week,
+          plannedFeedGramsPerBird: feedGramsPerBird,
+          plannedTotalFeedKg: totalFeedKg,
+          plannedWaterLiters: waterLiters,
+          plannedBodyWeightKg: bodyWeightKg,
+          plannedTemperatureCelsius: temperatureCelsius,
+          plannedMortalityPercent: mortalityPercent,
+          weekStartDate: weekStartDate,
+          updatedAt: DateTime.now());
 
       plans.add(plan);
     }
 
     // Save to Hive
     await _weeklyPlanBox.put(flockId, plans);
-    
+    for (final plan in plans) {
+      await syncQueue?.upsert(
+        uid: userId,
+        collection: FirestoreCollections.weeklyPlans,
+        id: plan.id,
+        data: plan.toMap(),
+        parentCollection: FirestoreCollections.flocks,
+        parentId: flockId,
+      );
+    }
+
     return plans;
   }
 
   @override
-  Future<void> updateWeekActuals(WeeklyPlanModel updatedPlan) async {
+  Future<void> updateWeekActuals(
+    String userId,
+    WeeklyPlanModel updatedPlan,
+  ) async {
     if (!Hive.isBoxOpen('weeklyPlanBox')) {
       throw Exception('Weekly plan box not initialized');
     }
 
     final plans = await getWeeklyPlansForFlock(updatedPlan.flockId);
-    final index = plans.indexWhere((p) => p.weekNumber == updatedPlan.weekNumber);
-    
+    final index =
+        plans.indexWhere((p) => p.weekNumber == updatedPlan.weekNumber);
+
     if (index == -1) {
       throw Exception('Week plan not found');
     }
 
     plans[index] = updatedPlan;
     await _weeklyPlanBox.put(updatedPlan.flockId, plans);
+    await syncQueue?.upsert(
+      uid: userId,
+      collection: FirestoreCollections.weeklyPlans,
+      id: updatedPlan.id,
+      data: updatedPlan.toMap(),
+      parentCollection: FirestoreCollections.flocks,
+      parentId: updatedPlan.flockId,
+    );
   }
 
   @override
-  Future<void> deleteWeeklyPlans(String flockId) async {
+  Future<void> deleteWeeklyPlans(String userId, String flockId) async {
     if (!Hive.isBoxOpen('weeklyPlanBox')) {
       throw Exception('Weekly plan box not initialized');
     }
-    
+
+    final plans = await getWeeklyPlansForFlock(flockId);
     await _weeklyPlanBox.delete(flockId);
+    for (final plan in plans) {
+      await syncQueue?.delete(
+        uid: userId,
+        collection: FirestoreCollections.weeklyPlans,
+        id: plan.id,
+        parentCollection: FirestoreCollections.flocks,
+        parentId: flockId,
+      );
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -147,11 +193,11 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
 
     // Interpolate between known values
     final sortedWeeks = breed.weeklyExpectedWeight.keys.toList()..sort();
-    
+
     // Find surrounding weeks
     int? lowerWeek;
     int? upperWeek;
-    
+
     for (int w in sortedWeeks) {
       if (w < week) lowerWeek = w;
       if (w > week && upperWeek == null) upperWeek = w;
@@ -168,7 +214,7 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
     if (sortedWeeks.isNotEmpty) {
       return breed.weeklyExpectedWeight[sortedWeeks.last]!;
     }
-    
+
     return 1.0; // Default fallback
   }
 
@@ -178,12 +224,12 @@ class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
     if (breed.id == 'broilers') {
       return (32 - (week - 1) * 2).clamp(21, 32).toDouble();
     }
-    
+
     // Layers/Kenbro: Start warm (30°C), stabilize at 21°C
     if (week <= 4) {
       return (30 - (week - 1) * 2).clamp(21, 30).toDouble();
     }
-    
+
     return 21.0; // Ambient temp for mature birds
   }
 

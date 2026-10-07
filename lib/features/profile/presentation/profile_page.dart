@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/domain/entities/user.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/data/models/user.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authhProvider);
-    final user = authState.user;
+    // final authState = ref.watch(authhProvider);
+    final auth = ref.watch(userProvider);
+    final user = auth.userModel;
     final stats = ref.watch(flockStatsProvider);
     final flocks = ref.watch(flockProvider).flocks;
-    final auth = ref.watch(authhProvider);
+    // final auth = ref.watch(authhProvider);
 
     // Calculate member since from oldest flock or current date
     String memberSince = 'New';
@@ -172,7 +173,7 @@ class ProfilePage extends ConsumerWidget {
                   );
 
                   if (confirm == true && context.mounted) {
-                    await ref.read(authhProvider.notifier).logout();
+                    await ref.read(userProvider.notifier).signOut();
                     if (context.mounted) {
                       Navigator.of(context).pushReplacementNamed('/');
                     }
@@ -244,7 +245,7 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, WidgetRef ref, User? user) {
+  void _showEditDialog(BuildContext context, WidgetRef ref, UserModel? user) {
     if (user == null) return;
 
     final nameController = TextEditingController(text: user.name);
