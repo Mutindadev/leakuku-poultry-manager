@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/platform_providers.dart';
 import 'package:leakuku/core/services/firestore_backup_service.dart';
 import 'package:leakuku/core/services/firestore_collection_data_source.dart';
 import 'package:leakuku/core/services/firestore_sync_queue.dart';
-import 'package:leakuku/core/services/notification_service.dart';
 import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/data/models/stock_history_model.dart';
 import 'package:leakuku/data/models/stock_item_model.dart';
@@ -95,6 +95,6 @@ final firestoreBackupServiceProvider = Provider<FirestoreBackupService>((ref) {
     vaccines: ref.watch(firestoreVaccineDataSourceProvider),
     weeklyPlans: ref.watch(firestoreWeeklyPlanDataSourceProvider),
     syncQueue: ref.watch(firestoreSyncQueueProvider),
-    notificationService: NotificationService(),
+    notificationService: ref.watch(notificationServiceProvider),
   );
 });

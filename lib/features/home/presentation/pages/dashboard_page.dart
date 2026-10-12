@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -31,10 +30,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Load flocks after widget mounts
-    Future.microtask(() {
-      ref.read(flockProvider.notifier).loadFlocks();
-    });
+    Future.microtask(() => ref.read(flockProvider.notifier).loadFlocks());
   }
 
   Widget _buildHomePage() {
@@ -43,12 +39,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final flockState = ref.watch(flockProvider);
     final stats = ref.watch(flockStatsProvider);
     final nextVaccination = _getNextVaccination(flockState.flocks);
-
-    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-      ref.read(userProvider.notifier).updateUserModel(
-            user!.copyWith(fcmToken: token),
-          );
-    });
 
     return SingleChildScrollView(
       child: Padding(
@@ -255,14 +245,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      _buildHomePage(),
-      const FlockPage(embedded: true),
-      const ProgressPage(),
-      const ReportsPage(),
-      const ProfilePage(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_getTitle(_selectedIndex)),
@@ -275,7 +257,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: pages,
+        children: [
+          _buildHomePage(),
+          const FlockPage(embedded: true),
+          const ProgressPage(),
+          const ReportsPage(),
+          const ProfilePage(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

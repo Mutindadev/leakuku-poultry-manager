@@ -67,7 +67,6 @@ class BusinessAnalyticsNotifier extends StateNotifier<BusinessAnalyticsState> {
   Future<BusinessAnalyticsData> _loadBusinessAnalytics() async {
     const reportService = ReportService();
 
-    // final userId = ref.read(authhProvider).user?.id;
     final userId = ref.read(userProvider).userModel?.uid;
 
     if (userId == null || userId.isEmpty) {

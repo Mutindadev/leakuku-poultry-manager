@@ -121,7 +121,14 @@ class ProfilePage extends ConsumerWidget {
     await ref.read(userProvider.notifier).signOut();
 
     if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/');
+      final auth = ref.read(userProvider);
+      if (auth.authState == AuthenticationState.unauthenticated) {
+        Navigator.of(context).pushReplacementNamed('/');
+      } else if (auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(auth.errorMessage!)),
+        );
+      }
     }
   }
 }

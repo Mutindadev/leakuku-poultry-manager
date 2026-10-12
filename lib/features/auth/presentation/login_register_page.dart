@@ -1,8 +1,9 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/di.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
+import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class LoginRegisterPage extends ConsumerStatefulWidget {
@@ -21,15 +22,15 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
   String _role = 'Farmer';
   bool _obscurePassword = true;
   bool _redirected = false;
+  bool _preparingDashboard = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       final auth = ref.read(userProvider);
-      if (!_redirected && auth.userModel != null) {
-        _redirected = true;
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+      if (auth.userModel != null && !auth.isLoading) {
+        _prepareDashboard();
       }
     });
   }
@@ -46,6 +47,39 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
     _emailController.clear();
     _passwordController.clear();
     _nameController.clear();
+  }
+
+  Future<void> _prepareDashboard() async {
+    if (_redirected || _preparingDashboard) return;
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) return;
+
+    setState(() => _preparingDashboard = true);
+    final flocks = ref.read(flockProvider.notifier);
+    await flocks.loadFlocks();
+    if (!mounted) return;
+
+    try {
+      await ref.read(firestoreSyncCoordinatorProvider).syncNow(userId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not sync farm data. Check your connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      if (ref.read(flockProvider).flocks.isEmpty && _isLogin) {
+        setState(() => _preparingDashboard = false);
+        return;
+      }
+    }
+
+    await flocks.loadFlocks();
+    if (!mounted) return;
+
+    _redirected = true;
+    Navigator.of(context).pushReplacementNamed('/dashboard');
   }
 
   String? _validateEmail(String? value) {
@@ -99,8 +133,8 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
           ),
         );
       }
-      if (next.userModel != null) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+      if (next.userModel != null && !next.isLoading) {
+        _prepareDashboard();
       }
     });
 
@@ -198,12 +232,9 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: auth.isLoading
+                        onPressed: auth.isLoading || _preparingDashboard
                             ? null
                             : () async {
-                                final fcmToken =
-                                    await FirebaseMessaging.instance.getToken();
-
                                 if (_formKey.currentState!.validate()) {
                                   if (_isLogin) {
                                     await ref
@@ -211,7 +242,6 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                                         .handleSignIn(
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
-                                          fcmToken,
                                         );
                                   } else {
                                     await ref
@@ -220,9 +250,9 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
                                           _nameController.text.trim(),
-                                          fcmToken,
                                         );
                                   }
+                                  if (mounted) await _prepareDashboard();
                                 }
                               },
                         style: ElevatedButton.styleFrom(
@@ -230,7 +260,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: auth.isLoading
+                        child: auth.isLoading || _preparingDashboard
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
                             : Text(

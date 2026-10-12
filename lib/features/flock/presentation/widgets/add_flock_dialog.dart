@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:leakuku/core/services/notification_service.dart';
+import 'package:leakuku/core/providers/platform_providers.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/domain/usecases/generate_vaccine_schedule.dart';
 import 'package:leakuku/domain/usecases/generate_weekly_plan.dart';
@@ -332,7 +332,8 @@ class _AddFlockDialogState extends State<AddFlockDialog> {
 
                       final vaccineDataSource =
                           ref.read(vaccineDataSourceProvider);
-                      final notificationService = NotificationService();
+                      final notificationService =
+                          ref.read(notificationServiceProvider);
                       final generateVaccineScheduleUseCase =
                           GenerateVaccineScheduleUseCase(
                         vaccineDataSource: vaccineDataSource,
