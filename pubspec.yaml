@@ -2,7 +2,7 @@ name: leakuku
 description: A new Flutter project for chicken rearing management.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -50,12 +50,14 @@ dependencies:
   firebase_auth: ^6.7.0
   google_sign_in: ^7.2.0
   cloud_firestore: ^6.10.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
   # flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
   
   # Code Generation
   build_runner: ^2.4.6
@@ -68,10 +70,20 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  adaptive_icon_background: "#FAF8F2"
+  ios: true
+  background_color_ios: "#FAF8F2"
+  image_path: "assets/logo.png"
+  adaptive_icon_foreground_inset: 0
+  min_sdk_android: 21
+  remove_alpha_ios: true
+
 # Flutter specific configuration
 flutter:
+  generate: true
   uses-material-design: true
   
-  # assets:
-  #   - images/
-  #   - assets/
+  assets:
+    - assets/

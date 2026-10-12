@@ -6,6 +6,7 @@ import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 import 'package:leakuku/features/reports/data/models/weekly_mortality_record.dart';
 import 'package:leakuku/features/reports/domain/service/report_service.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/stock_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
@@ -74,6 +75,7 @@ class HealthAnalyticsNotifier extends StateNotifier<HealthAnalyticsState> {
     final vaccineDataSource = ref.read(vaccineDataSourceProvider);
     final stockItems = await ref.read(stockItemsProvider.future);
     final stockDataSource = ref.read(stockLocalDataSourceProvider);
+    final userId = ref.read(userProvider).userModel?.uid ?? '';
     const reportService = ReportService();
 
     final todayBoundary = reportService.getBoundary(ReportFilter.today);
@@ -200,7 +202,7 @@ class HealthAnalyticsNotifier extends StateNotifier<HealthAnalyticsState> {
     final medicineUsedEntries = <Map<String, dynamic>>[];
     final medicineUsedEntriesInSelectedPeriod = <Map<String, dynamic>>[];
     for (final item in medicineItems) {
-      final history = await stockDataSource.getItemHistory(item.id);
+      final history = await stockDataSource.getItemHistory(userId, item.id);
       for (final entry in history) {
         if (entry.action.toLowerCase() != 'used') {
           continue;

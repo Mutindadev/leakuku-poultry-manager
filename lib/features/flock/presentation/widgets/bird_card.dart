@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/pages/batch_details_page.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/features/flock/presentation/widgets/add_flock_dialog.dart';

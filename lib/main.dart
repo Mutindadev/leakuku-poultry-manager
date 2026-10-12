@@ -3,6 +3,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:leakuku/core/di.dart';
+import 'package:leakuku/core/providers/platform_providers.dart';
 import 'package:leakuku/core/services/notification_service.dart';
 import 'package:leakuku/core/theme/app_theme.dart';
 import 'package:leakuku/data/datasources/breed_local_data_source.dart';
@@ -10,12 +12,9 @@ import 'package:leakuku/data/models/breed_model.dart';
 import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/data/models/stock_history_model.dart';
 import 'package:leakuku/data/models/stock_item_model.dart';
-import 'package:leakuku/data/models/user_model.dart';
-import 'package:leakuku/data/models/vaccine_model.dart';
-import 'package:leakuku/data/models/weekly_plan_model.dart';
 import 'package:leakuku/features/auth/presentation/login_register_page.dart';
 import 'package:leakuku/features/finances/presentation/pages/farm_finances_page.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/pages/flock_page.dart';
 import 'package:leakuku/features/home/presentation/pages/dashboard_page.dart';
 import 'package:leakuku/features/notifications/presentation/notifications_page.dart';
@@ -23,7 +22,9 @@ import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
 import 'package:leakuku/features/stock/presentation/pages/stock_page.dart';
+import 'package:leakuku/features/user/data/models/user.dart';
 import 'package:leakuku/firebase_options.dart';
+import 'package:leakuku/hive_helper/register_adapters.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
@@ -41,6 +42,7 @@ void main() async {
     debugPrint('📊 Database URL: ${FirebaseDatabase.instance.databaseURL}');
   } catch (e) {
     debugPrint('❌ Error initializing Firebase: $e');
+    rethrow;
   }
 
   // Initialize timezone database
@@ -54,37 +56,40 @@ void main() async {
   await Hive.initFlutter();
 
   // Register adapters (use generated classes, no casts)
-  Hive.registerAdapter(UserModelAdapter());
-  Hive.registerAdapter(FlockModelAdapter());
-  Hive.registerAdapter(BreedModelAdapter());
-  Hive.registerAdapter(VaccineModelAdapter());
-  Hive.registerAdapter(WeeklyPlanModelAdapter());
-  Hive.registerAdapter(StockItemModelAdapter());
-  Hive.registerAdapter(StockHistoryModelAdapter());
-  Hive.registerAdapter(FinancialTransactionModelAdapter());
+  registerAdapters();
 
   // Open boxes
   await Hive.openBox<UserModel>('userBox');
+  await Hive.openBox<Map<dynamic, dynamic>>('firestoreSyncQueue');
   await Hive.openBox<FlockModel>('flockBox');
   final breedBox = await Hive.openBox<BreedModel>('breedBox');
   await Hive.openBox<List<dynamic>>('vaccineBox');
   await Hive.openBox<List<dynamic>>('weeklyPlanBox');
   await Hive.openBox<StockItemModel>('stockItemBox');
-  await Hive.openBox<List<dynamic>>('stockHistoryBox');
+  await Hive.openBox<List<StockHistoryModel>>('stockHistoryBox');
   await Hive.openBox<FinancialTransactionModel>('farmFinanceTransactionBox');
 
   // Seed default breeds
   final breedDataSource = BreedLocalDataSourceImpl(breedBox: breedBox);
   await breedDataSource.seedDefaultBreeds();
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        notificationServiceProvider.overrideWithValue(notificationService),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(firestoreSyncCoordinatorProvider);
+
     return MaterialApp(
       title: 'LeaKuku',
       debugShowCheckedModeBanner: false,

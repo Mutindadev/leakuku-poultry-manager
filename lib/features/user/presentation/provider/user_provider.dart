@@ -1,344 +1,401 @@
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:flutter/foundation.dart';
-// import 'package:hive/hive.dart';
-// import 'package:leakuku/features/auth/data/data_sources/remote_implementation.dart';
-// import 'package:leakuku/features/auth/data/repositories/auth_implementation.dart';
-// import 'package:leakuku/features/auth/domain/use_case/sign_out.dart';
-// import 'package:leakuku/features/user/data/data_sources/remote_implementation.dart';
-// import 'package:leakuku/features/user/data/models/user.dart';
-// import 'package:leakuku/features/user/data/repositories/user_implementation.dart';
-// import 'package:leakuku/features/user/domain/use_case/read.dart';
+import 'dart:async';
 
-// enum AuthenticationState { unknown, authenticated, unauthenticated }
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:leakuku/core/di.dart';
+import 'package:leakuku/core/providers/platform_providers.dart';
+import 'package:leakuku/features/auth/domain/use_case/register_with_email.dart';
+import 'package:leakuku/features/auth/domain/use_case/sign_out.dart';
+import 'package:leakuku/features/auth/domain/use_case/signin_with_email.dart';
+import 'package:leakuku/features/user/data/models/user.dart';
+import 'package:leakuku/features/user/domain/use_case/create.dart';
+import 'package:leakuku/features/user/domain/use_case/read.dart';
+import 'package:leakuku/features/user/domain/use_case/update.dart';
 
-// enum RegistrationState { unknown, incomplete, complete }
+enum AuthenticationState { unknown, authenticated, unauthenticated }
 
-// class UserProvider extends ChangeNotifier {
-//   // Hive box for caching
-//   static const String _userBoxName = 'user_cache';
-//   static const String _currentUserKey = 'current_user';
-//   Box<UserModel>? _userBox;
+class UserState {
+  final User? firebaseUser;
+  final UserModel? userModel;
+  final AuthenticationState authState;
+  final bool isLoading;
+  final String? errorMessage;
 
-//   // Dependencies
-//   SignOutUseCase _signOutUseCase = SignOutUseCase(
-//     repository: AuthRepositoryImplementation(
-//       remoteDataSource: AuthRemoteDataSourceImplementation(),
-//     ),
-//   );
+  const UserState({
+    this.firebaseUser,
+    this.userModel,
+    this.authState = AuthenticationState.unknown,
+    this.isLoading = false,
+    this.errorMessage,
+  });
 
-//   ReadUserUseCase _readUserUseCase = ReadUserUseCase(
-//     repository: UserRepositoryImplementation(
-//       remoteDataSource: UserRemoteDataSourseImlementation(),
-//     ),
-//   );
+  UserState copyWith({
+    User? firebaseUser,
+    UserModel? userModel,
+    AuthenticationState? authState,
+    bool? isLoading,
+    String? errorMessage,
+  }) {
+    return UserState(
+      firebaseUser: firebaseUser ?? this.firebaseUser,
+      userModel: userModel ?? this.userModel,
+      authState: authState ?? this.authState,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
 
-//   // State variables
-//   User? _firebaseUser;
-//   UserModel? _userModel;
-//   AuthenticationState _authState = AuthenticationState.unknown;
-//   RegistrationState _registrationState = RegistrationState.unknown;
-//   bool _isLoading = false;
-//   String? _errorMessage;
-//   ProfileProvider? _profileProvider;
+class UserNotifier extends StateNotifier<UserState> {
+  static const String _legacyUserKey = 'current_user';
 
-//   // Constructor
-//   UserProvider() {
-//     _initializeHive();
-//     _listenToAuthChanges();
-//   }
+  UserNotifier({
+    required FirebaseAuth firebaseAuth,
+    required FirebaseMessaging firebaseMessaging,
+    required Box<UserModel> userBox,
+    required SignOutUseCase signOutUseCase,
+    required ReadUserUseCase readUserUseCase,
+    required SigninWithEmailUseCase signinWithEmailUseCase,
+    required RegisterWithEmailUseCase registerWithEmailUseCase,
+    required CreateUserUseCase createUserUseCase,
+    required UpdateUserUseCase updateUserUseCase,
+  })  : _firebaseAuth = firebaseAuth,
+        _firebaseMessaging = firebaseMessaging,
+        _userBox = userBox,
+        _signOutUseCase = signOutUseCase,
+        _readUserUseCase = readUserUseCase,
+        _signinWithEmailUseCase = signinWithEmailUseCase,
+        _registerWithEmailUseCase = registerWithEmailUseCase,
+        _createUserUseCase = createUserUseCase,
+        _updateUserUseCase = updateUserUseCase,
+        super(const UserState()) {
+    _authSubscription = _firebaseAuth.authStateChanges().listen(
+      _handleAuthChange,
+      onError: (Object error) {
+        if (mounted) {
+          state = state.copyWith(
+            errorMessage: error.toString(),
+            isLoading: false,
+          );
+        }
+      },
+    );
+    _tokenSubscription = _firebaseMessaging.onTokenRefresh.listen(
+      (token) => unawaited(_refreshFcmToken(token)),
+      onError: (Object error) => debugPrint('FCM token refresh failed: $error'),
+    );
+  }
 
-//   void setDependencies({required ProfileProvider profileProvider}) {
-//     _profileProvider = profileProvider;
-//   }
+  final FirebaseAuth _firebaseAuth;
+  final FirebaseMessaging _firebaseMessaging;
+  final Box<UserModel> _userBox;
+  final SignOutUseCase _signOutUseCase;
+  final ReadUserUseCase _readUserUseCase;
+  final SigninWithEmailUseCase _signinWithEmailUseCase;
+  final RegisterWithEmailUseCase _registerWithEmailUseCase;
+  final CreateUserUseCase _createUserUseCase;
+  final UpdateUserUseCase _updateUserUseCase;
+  final Map<String, Future<void>> _userLoads = {};
+  late final StreamSubscription<User?> _authSubscription;
+  late final StreamSubscription<String> _tokenSubscription;
 
-//   // Initialize Hive box
-//   Future<void> _initializeHive() async {
-//     try {
-//       _userBox = await Hive.openBox<UserModel>(_userBoxName);
+  Future<void> _cacheUserData(UserModel user) async {
+    try {
+      await _userBox.put(user.uid, user);
+    } catch (e) {
+      debugPrint('Error caching user data: $e');
+    }
+  }
 
-//       // Load cached user data if available
-//       final cachedUser = _userBox?.get(_currentUserKey);
-//       if (cachedUser != null) {
-//         _userModel = cachedUser;
+  Future<UserModel?> _readCachedUser(String uid) async {
+    final cachedUser = _userBox.get(uid);
+    if (cachedUser != null) return cachedUser;
 
-//         // Check if cached user profile is complete
-//         if (_isProfileComplete(cachedUser)) {
-//           _registrationState = RegistrationState.complete;
-//         } else {
-//           _registrationState = RegistrationState.incomplete;
-//         }
+    final legacyUser = _userBox.get(_legacyUserKey);
+    if (legacyUser?.uid != uid) return null;
 
-//         notifyListeners();
-//       }
-//     } catch (e) {
-//       debugPrint('Error initializing Hive: $e');
-//     }
-//   }
+    await _cacheUserData(legacyUser!);
+    return legacyUser;
+  }
 
-//   // Cache user data to Hive
-//   Future<void> _cacheUserData(UserModel user) async {
-//     try {
-//       await _userBox?.put(_currentUserKey, user);
-//     } catch (e) {
-//       debugPrint('Error caching user data: $e');
-//     }
-//   }
+  Future<void> _handleAuthChange(User? user) async {
+    if (user == null) {
+      state = const UserState(authState: AuthenticationState.unauthenticated);
+      return;
+    }
+    await _loadAuthenticatedUser(user);
+  }
 
-//   // Remove cached user data
-//   Future<void> _clearCachedUserData() async {
-//     try {
-//       await _userBox?.delete(_currentUserKey);
-//     } catch (e) {
-//       debugPrint('Error clearing cached user data: $e');
-//     }
-//   }
+  Future<void> _loadAuthenticatedUser(User user) {
+    final pendingLoad = _userLoads[user.uid];
+    if (pendingLoad != null) return pendingLoad;
 
-//   // Getters
-//   User? get firebaseUser => _firebaseUser;
-//   UserModel? get user => _userModel;
-//   AuthenticationState get authState => _authState;
-//   RegistrationState get registrationState => _registrationState;
-//   bool get isLoading => _isLoading;
-//   String? get errorMessage => _errorMessage;
+    final load = _loadAuthenticatedUserOnce(user);
+    _userLoads[user.uid] = load;
+    return load.whenComplete(() => _userLoads.remove(user.uid));
+  }
 
-//   // Computed getters
-//   bool get isLoggedIn => _authState == AuthenticationState.authenticated;
-//   bool get isRegistrationComplete =>
-//       _registrationState == RegistrationState.complete;
-//   bool get isAnonymous => _firebaseUser?.isAnonymous ?? false;
-//   String get userId => _firebaseUser?.uid ?? '';
-//   String get userEmail => _firebaseUser?.email ?? '';
+  Future<void> _loadAuthenticatedUserOnce(User user) async {
+    if (!mounted || _firebaseAuth.currentUser?.uid != user.uid) return;
+    state = UserState(
+      firebaseUser: user,
+      authState: AuthenticationState.authenticated,
+      isLoading: true,
+    );
 
-//   // Listen to Firebase auth state changes
-//   void _listenToAuthChanges() {
-//     FirebaseAuth.instance.authStateChanges().listen((User? user) {
-//       _firebaseUser = user;
+    UserModel? cachedUser;
+    try {
+      cachedUser = await _readCachedUser(user.uid);
+    } catch (error) {
+      debugPrint('Could not read cached user data: $error');
+    }
+    if (!mounted || _firebaseAuth.currentUser?.uid != user.uid) return;
 
-//       if (user == null) {
-//         _handleSignOut();
-//       } else {
-//         handleSignIn(user);
-//       }
+    state = UserState(
+      firebaseUser: user,
+      userModel: cachedUser,
+      authState: AuthenticationState.authenticated,
+      isLoading: cachedUser == null,
+    );
 
-//       notifyListeners();
-//     });
-//   }
+    try {
+      final result = await _readUserUseCase(user.uid);
+      await result.fold<Future<void>>(
+        (failure) async {
+          if (!_isCurrentUser(user.uid)) return;
+          state = state.copyWith(
+            errorMessage: failure.message,
+            isLoading: false,
+          );
+          if (cachedUser != null) {
+            await _refreshFcmTokenFor(user.uid, currentUser: cachedUser);
+          }
+        },
+        (userModel) async {
+          if (!_isCurrentUser(user.uid)) return;
+          state = state.copyWith(userModel: userModel, isLoading: false);
+          await _cacheUserData(userModel);
+          await _refreshFcmTokenFor(user.uid, currentUser: userModel);
+        },
+      );
+    } catch (error) {
+      if (!_isCurrentUser(user.uid)) return;
+      state = state.copyWith(
+        errorMessage: 'Error fetching user data: $error',
+        isLoading: false,
+      );
+    }
+  }
 
-//   // Handle user sign in
-//   Future<void> handleSignIn(User user) async {
-//     _authState = AuthenticationState.authenticated;
-//     _firebaseUser = user;
+  bool _isCurrentUser(String uid) =>
+      mounted &&
+      state.firebaseUser?.uid == uid &&
+      _firebaseAuth.currentUser?.uid == uid;
 
-//     _profileProvider?.checkProfileSetupStatus();
-//     // First check cached data for this user
-//     final cachedUser = _userBox?.get(_currentUserKey);
-//     if (cachedUser != null && cachedUser.uid == user.uid) {
-//       _userModel = cachedUser;
-//       _registrationState = _isProfileComplete(cachedUser)
-//           ? RegistrationState.complete
-//           : RegistrationState.incomplete;
-//       notifyListeners();
+  Future<void> _refreshFcmToken(String token) async {
+    final uid = _firebaseAuth.currentUser?.uid;
+    if (uid == null) return;
+    await _refreshFcmTokenFor(uid, token: token);
+  }
 
-//       // Refresh data in background
-//       _refreshUserDataInBackground(user.uid);
-//     } else {
-//       // No cached data or different user, fetch fresh data
-//       await _checkRegistrationStatus(user.uid);
-//     }
-//   }
+  Future<void> _refreshFcmTokenFor(
+    String uid, {
+    UserModel? currentUser,
+    String? token,
+  }) async {
+    try {
+      final fcmToken = token ?? await _firebaseMessaging.getToken();
+      if (fcmToken == null || fcmToken.isEmpty || !_isCurrentUser(uid)) return;
 
-//   // Handle user sign out
-//   void _handleSignOut() {
-//     _authState = AuthenticationState.unauthenticated;
-//     _registrationState = RegistrationState.unknown;
-//     _firebaseUser = null;
-//     _userModel = null;
-//     _errorMessage = null;
+      final cachedUser = currentUser ?? state.userModel;
+      if (cachedUser == null || cachedUser.uid != uid) return;
+      if (cachedUser.fcmToken == fcmToken) return;
 
-//     // Clear cached data
-//     _clearCachedUserData();
-//   }
+      final now = DateTime.now();
+      final updatedUser = cachedUser.copyWith(
+        fcmToken: fcmToken,
+        updatedAt: now,
+        lastLocalModifiedAt: now,
+      );
+      state = state.copyWith(userModel: updatedUser);
+      await _cacheUserData(updatedUser);
 
-//   // Refresh user data in background without showing loading
-//   Future<void> _refreshUserDataInBackground(String userId) async {
-//     try {
-//       final result = await _readUserUseCase(userId);
+      final result = await _updateUserUseCase(updatedUser.toMap());
+      result.fold(
+        (failure) => debugPrint('Could not sync FCM token: ${failure.message}'),
+        (_) {},
+      );
+    } catch (error) {
+      debugPrint('Could not refresh FCM token: $error');
+    }
+  }
 
-//       result.fold(
-//         (failure) {
-//           // Keep existing cached data if fetch fails
-//           debugPrint('Background refresh failed: ${failure.message}');
-//         },
-//         (user) {
-//           // Update with fresh data
-//           _userModel = user;
+  Future<void> handleSignIn(String email, String password) async {
+    state = const UserState(isLoading: true);
+    try {
+      final result = await _signinWithEmailUseCase(email, password);
+      await result.fold<Future<void>>(
+        (failure) async {
+          state = UserState(
+            authState: AuthenticationState.unauthenticated,
+            errorMessage: failure.message,
+          );
+        },
+        _loadAuthenticatedUser,
+      );
+    } catch (error) {
+      state = UserState(
+        authState: AuthenticationState.unauthenticated,
+        errorMessage: error.toString(),
+      );
+    }
+  }
 
-//           if (_isProfileComplete(user)) {
-//             _registrationState = RegistrationState.complete;
-//           } else {
-//             _registrationState = RegistrationState.incomplete;
-//           }
+  Future<void> handleRegister(
+    String email,
+    String password,
+    String name,
+  ) async {
+    state = const UserState(isLoading: true);
+    try {
+      final result = await _registerWithEmailUseCase(email, password, name);
+      await result.fold<Future<void>>(
+        (failure) async {
+          state = UserState(
+            authState: AuthenticationState.unauthenticated,
+            errorMessage: failure.message,
+          );
+        },
+        (firebaseUser) async {
+          final now = DateTime.now();
+          final userModel = UserModel(
+            uid: firebaseUser.uid,
+            name: name,
+            email: firebaseUser.email ?? '',
+            role: 'farmer',
+            phonenumber: '',
+            flockIds: [],
+            activeFlocks: [],
+            fcmToken: '',
+            isOnline: false,
+            createdAt: now,
+            updatedAt: now,
+            lastSyncedAt: now,
+            lastLocalModifiedAt: now,
+          );
 
-//           // Cache the fresh data
-//           _cacheUserData(user);
-//           _errorMessage = null;
-//           notifyListeners();
-//         },
-//       );
-//     } catch (e) {
-//       debugPrint('Background refresh error: $e');
-//     }
-//   }
+          final createResult = await _createUserUseCase(userModel);
+          await createResult.fold<Future<void>>(
+            (failure) async {
+              state = UserState(
+                firebaseUser: firebaseUser,
+                authState: AuthenticationState.authenticated,
+                errorMessage: failure.message,
+              );
+            },
+            (_) async {
+              state = UserState(
+                userModel: userModel,
+                firebaseUser: firebaseUser,
+                authState: AuthenticationState.authenticated,
+              );
+              await _cacheUserData(userModel);
+              await _refreshFcmTokenFor(
+                firebaseUser.uid,
+                currentUser: userModel,
+              );
+            },
+          );
+        },
+      );
+    } catch (error) {
+      state = state.copyWith(
+        errorMessage: 'Error creating user data: $error',
+        isLoading: false,
+      );
+    }
+  }
 
-//   // Check if user registration is complete
-//   Future<void> _checkRegistrationStatus(String userId) async {
-//     try {
-//       _setLoading(true);
+  Future<void> signOut() async {
+    state = state.copyWith(isLoading: true);
 
-//       final result = await _readUserUseCase(userId);
+    try {
+      final result = await _signOutUseCase();
+      await result.fold<Future<void>>(
+        (failure) async {
+          state = state.copyWith(
+            errorMessage: failure.message,
+            isLoading: false,
+          );
+        },
+        (_) async {
+          state = const UserState(
+            authState: AuthenticationState.unauthenticated,
+            isLoading: false,
+            errorMessage: null,
+          );
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Error signing out: $e',
+        isLoading: false,
+      );
+    }
+  }
 
-//       result.fold(
-//         (failure) {
-//           // User doesn't exist in Firestore - registration incomplete
-//           _registrationState = RegistrationState.incomplete;
-//           _userModel = null;
-//           _errorMessage = failure.message;
+  UserModel? getCachedUser() {
+    final uid = _firebaseAuth.currentUser?.uid;
+    if (uid == null) return null;
+    return _userBox.get(uid);
+  }
 
-//           // Clear any stale cached data
-//           _clearCachedUserData();
-//         },
-//         (user) {
-//           // User exists - check if profile is complete
-//           _userModel = user;
+  bool get hasCachedUserData => getCachedUser() != null;
 
-//           if (_isProfileComplete(user)) {
-//             _registrationState = RegistrationState.complete;
-//           } else {
-//             _registrationState = RegistrationState.incomplete;
-//           }
+  Future<void> clearAllCache() async {
+    try {
+      await _userBox.clear();
+      state = UserState(
+        firebaseUser: state.firebaseUser,
+        authState: state.authState,
+        isLoading: state.isLoading,
+      );
+    } catch (e) {
+      debugPrint('Error clearing all cache: $e');
+    }
+  }
 
-//           _errorMessage = null;
+  void clearError() => state = state.copyWith(errorMessage: null);
 
-//           // Cache the user data
-//           _cacheUserData(user);
-//         },
-//       );
-//     } catch (e) {
-//       _registrationState = RegistrationState.incomplete;
-//       _errorMessage = 'Error checking registration status: $e';
-//     } finally {
-//       _setLoading(false);
-//     }
-//   }
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    _tokenSubscription.cancel();
+    super.dispose();
+  }
+}
 
-//   // Check if user profile has all required fields
-//   bool _isProfileComplete(UserModel user) {
-//     return user.email.isNotEmpty && user.phonenumber.isNotEmpty;
-//     // Add more conditions as needed (profile pic, role, etc.)
-//   }
+final userProvider = StateNotifierProvider<UserNotifier, UserState>((ref) {
+  return UserNotifier(
+    firebaseAuth: ref.watch(firebaseAuthProvider),
+    firebaseMessaging: ref.watch(firebaseMessagingProvider),
+    userBox: ref.watch(userBoxProvider),
+    signOutUseCase: ref.watch(signOutUseCaseProvider),
+    readUserUseCase: ref.watch(readUserUseCaseProvider),
+    signinWithEmailUseCase: ref.watch(signInWithEmailUseCaseProvider),
+    registerWithEmailUseCase: ref.watch(registerWithEmailUseCaseProvider),
+    createUserUseCase: ref.watch(createUserUseCaseProvider),
+    updateUserUseCase: ref.watch(updateUserUseCaseProvider),
+  );
+});
 
-//   // Update user model after successful operations
-//   void updateUserModel(UserModel user) {
-//     _userModel = user;
-//     _registrationState = _isProfileComplete(user)
-//         ? RegistrationState.complete
-//         : RegistrationState.incomplete;
-//     _errorMessage = null;
+final currentUserProvider = Provider<UserModel?>((ref) {
+  return ref.watch(userProvider).userModel;
+});
 
-//     // Cache the updated user data
-//     _cacheUserData(user);
-//     notifyListeners();
-//   }
-
-//   // Complete registration
-//   void completeRegistration(UserModel user) {
-//     _userModel = user;
-//     _registrationState = RegistrationState.complete;
-//     _errorMessage = null;
-
-//     // Cache the complete user data
-//     _cacheUserData(user);
-//     notifyListeners();
-//   }
-
-//   // Sign out user
-//   Future<void> signOut() async {
-//     try {
-//       _setLoading(true);
-
-//       final result = await _signOutUseCase().whenComplete(() {
-//         _handleSignOut();
-//       });
-
-//       result.fold(
-//         (failure) {
-//           _errorMessage = failure.message;
-//         },
-//         (_) {
-//           // Sign out successful - auth listener will handle state update
-//           _errorMessage = null;
-//         },
-//       );
-//     } catch (e) {
-//       _errorMessage = 'Error signing out: $e';
-//     } finally {
-//       _setLoading(false);
-//     }
-//   }
-
-//   // Refresh user data (force refresh from server)
-//   Future<void> refreshUserData() async {
-//     if (_firebaseUser != null) {
-//       await _checkRegistrationStatus(_firebaseUser!.uid);
-//     }
-//   }
-
-//   // Get cached user data without network call
-//   UserModel? getCachedUser() {
-//     return _userBox?.get(_currentUserKey);
-//   }
-
-//   // Check if user data is cached
-//   bool get hasCachedUserData => _userBox?.containsKey(_currentUserKey) ?? false;
-
-//   // Clear all cached data (useful for debugging or reset)
-//   Future<void> clearAllCache() async {
-//     try {
-//       await _userBox?.clear();
-//       _userModel = null;
-//       notifyListeners();
-//     } catch (e) {
-//       debugPrint('Error clearing all cache: $e');
-//     }
-//   }
-
-//   // Clear error message
-//   void clearError() {
-//     _errorMessage = null;
-//     notifyListeners();
-//   }
-
-//   // Set loading state
-//   void _setLoading(bool loading) {
-//     _isLoading = loading;
-//     notifyListeners();
-//   }
-
-//   // Force authentication state (useful for testing or special cases)
-//   void forceAuthState(AuthenticationState state) {
-//     _authState = state;
-//     notifyListeners();
-//   }
-
-//   // Force registration state (useful for testing or special cases)
-//   void forceRegistrationState(RegistrationState state) {
-//     _registrationState = state;
-//     notifyListeners();
-//   }
-
-//   @override
-//   void dispose() {
-//     _userBox?.close();
-//     super.dispose();
-//   }
-// }
+final currentFirebaseUserProvider = Provider<User?>((ref) {
+  return ref.watch(userProvider).firebaseUser;
+});

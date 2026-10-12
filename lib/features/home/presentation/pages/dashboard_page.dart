@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/services/feeding_calculator.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/pages/flock_page.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/features/flock/presentation/widgets/add_flock_dialog.dart';
@@ -14,7 +14,7 @@ import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
 import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -30,15 +30,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Load flocks after widget mounts
-    Future.microtask(() {
-      ref.read(flockProvider.notifier).loadFlocks();
-    });
+    Future.microtask(() => ref.read(flockProvider.notifier).loadFlocks());
   }
 
   Widget _buildHomePage() {
-    final authState = ref.watch(authhProvider);
-    final user = authState.user;
+    final auth = ref.watch(userProvider);
+    final user = auth.userModel;
     final flockState = ref.watch(flockProvider);
     final stats = ref.watch(flockStatsProvider);
     final nextVaccination = _getNextVaccination(flockState.flocks);
@@ -248,14 +245,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      _buildHomePage(),
-      const FlockPage(embedded: true),
-      const ProgressPage(),
-      const ReportsPage(),
-      const ProfilePage(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_getTitle(_selectedIndex)),
@@ -268,7 +257,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: pages,
+        children: [
+          _buildHomePage(),
+          const FlockPage(embedded: true),
+          const ProgressPage(),
+          const ReportsPage(),
+          const ProfilePage(),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,

@@ -3,7 +3,7 @@ import 'package:leakuku/core/services/feeding_calculator.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/core/widgets/input_widgets.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
-import 'package:leakuku/features/flock/domain/flock_model.dart';
+import 'package:leakuku/features/flock/data/models/flock_model.dart';
 
 class RecordCard extends StatelessWidget {
   final FlockModel flock;

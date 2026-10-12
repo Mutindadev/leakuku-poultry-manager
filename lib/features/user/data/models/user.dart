@@ -1,63 +1,118 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'dart:core';
 
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/hive_helper/fields/user_model_fields.dart';
+import 'package:leakuku/hive_helper/hive_adapters.dart';
+import 'package:leakuku/hive_helper/hive_types.dart';
 
 part 'user.g.dart';
 
-// @HiveType(typeId: HiveTypes.userModel, adapterName: HiveAdapters.userModel)
+@HiveType(typeId: HiveTypes.userModel, adapterName: HiveAdapters.userModel)
 class UserModel extends HiveObject {
   // @HiveField(UserModelFields.uid)
+  @HiveField(UserModelFields.uid)
   String uid;
 
   // @HiveField(UserModelFields.phonenumber)
+  @HiveField(UserModelFields.phonenumber)
   String phonenumber;
   // @HiveField(UserModelFields.email)
+  @HiveField(UserModelFields.email)
   String email;
+  @HiveField(UserModelFields.name)
+  String name;
+  @HiveField(UserModelFields.role)
+  String role;
   // @HiveField(UserModelFields.profileIds)
-  List<String> profileIds;
+  @HiveField(UserModelFields.flockIds)
+  List<String> flockIds;
+  @HiveField(UserModelFields.activeFlocks)
+  List<String> activeFlocks;
 
   // @HiveField(UserModelFields.fcmToken)
+  @HiveField(UserModelFields.fcmToken)
   String fcmToken;
   // @HiveField(UserModelFields.isOnline)
+  @HiveField(UserModelFields.isOnline)
   bool isOnline;
   // @HiveField(UserModelFields.createdAt)
+  @HiveField(UserModelFields.createdAt)
   DateTime createdAt;
   // @HiveField(UserModelFields.updatedAt)
+  @HiveField(UserModelFields.updatedAt)
   DateTime updatedAt;
+
+  // sync metadata
+  @HiveField(UserModelFields.lastSyncedAt)
+  DateTime lastSyncedAt;
+  @HiveField(UserModelFields.lastLocalModifiedAt)
+  DateTime lastLocalModifiedAt;
 
   UserModel({
     required this.uid,
     required this.phonenumber,
     required this.email,
-    required this.profileIds,
+    required this.name,
+    required this.role,
+    required this.flockIds,
+    required this.activeFlocks,
     required this.fcmToken,
     required this.isOnline,
     required this.createdAt,
     required this.updatedAt,
+    required this.lastSyncedAt,
+    required this.lastLocalModifiedAt,
   });
 
   UserModel copyWith({
     String? uid,
     String? phonenumber,
     String? email,
-    List<String>? profileIds,
+    String? name,
+    String? role,
+    List<String>? flockIds,
+    List<String>? activeFlocks,
     String? fcmToken,
     bool? isOnline,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastSyncedAt,
+    DateTime? lastLocalModifiedAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
       phonenumber: phonenumber ?? this.phonenumber,
       email: email ?? this.email,
-      profileIds: profileIds ?? this.profileIds,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      flockIds: flockIds ?? this.flockIds,
+      activeFlocks: activeFlocks ?? this.activeFlocks,
       fcmToken: fcmToken ?? this.fcmToken,
       isOnline: isOnline ?? this.isOnline,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      lastLocalModifiedAt: lastLocalModifiedAt ?? this.lastLocalModifiedAt,
+    );
+  }
+
+  static UserModel empty() {
+    return UserModel(
+      uid: '',
+      phonenumber: '',
+      email: '',
+      name: '',
+      role: '',
+      flockIds: [],
+      activeFlocks: [],
+      fcmToken: '',
+      isOnline: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      lastSyncedAt: DateTime.now(),
+      lastLocalModifiedAt: DateTime.now(),
     );
   }
 
@@ -66,11 +121,16 @@ class UserModel extends HiveObject {
       'uid': uid,
       'phonenumber': phonenumber,
       'email': email,
-      'profileIds': profileIds,
+      'name': name,
+      'role': role,
+      'flockIds': flockIds,
+      'activeFlocks': activeFlocks,
       'fcmToken': fcmToken,
       'isOnline': isOnline,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'lastSyncedAt': lastSyncedAt.millisecondsSinceEpoch,
+      'lastLocalModifiedAt': lastLocalModifiedAt.millisecondsSinceEpoch,
     };
   }
 
@@ -79,11 +139,18 @@ class UserModel extends HiveObject {
       uid: map['uid'] as String,
       phonenumber: map['phonenumber'] as String,
       email: map['email'] as String,
-      profileIds: List<String>.from((map['profileIds'] as List<String>)),
+      name: map['name'] as String,
+      role: map['role'] as String,
+      flockIds: List<String>.from(map['flockIds'] as List? ?? const []),
+      activeFlocks: List<String>.from(map['activeFlocks'] as List? ?? const []),
       fcmToken: map['fcmToken'] as String,
       isOnline: map['isOnline'] as bool,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int),
+      lastSyncedAt:
+          DateTime.fromMillisecondsSinceEpoch(map['lastSyncedAt'] as int),
+      lastLocalModifiedAt: DateTime.fromMillisecondsSinceEpoch(
+          map['lastLocalModifiedAt'] as int),
     );
   }
 
@@ -94,7 +161,7 @@ class UserModel extends HiveObject {
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid,  phonenumber: $phonenumber, email: $email, profileIds: $profileIds,  fcmToken: $fcmToken, isOnline: $isOnline)';
+    return 'UserModel(uid: $uid, phonenumber: $phonenumber, email: $email, name: $name, role: $role, flockIds: $flockIds, activeFlocks: $activeFlocks, fcmToken: $fcmToken, isOnline: $isOnline, createdAt: $createdAt, updatedAt: $updatedAt, lastSyncedAt: $lastSyncedAt, lastLocalModifiedAt: $lastLocalModifiedAt)';
   }
 
   @override
@@ -104,11 +171,16 @@ class UserModel extends HiveObject {
     return other.uid == uid &&
         other.phonenumber == phonenumber &&
         other.email == email &&
-        listEquals(other.profileIds, profileIds) &&
+        other.name == name &&
+        other.role == role &&
+        listEquals(other.flockIds, flockIds) &&
+        listEquals(other.activeFlocks, activeFlocks) &&
         other.fcmToken == fcmToken &&
         other.isOnline == isOnline &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.lastSyncedAt == lastSyncedAt &&
+        other.lastLocalModifiedAt == lastLocalModifiedAt;
   }
 
   @override
@@ -116,10 +188,15 @@ class UserModel extends HiveObject {
     return uid.hashCode ^
         phonenumber.hashCode ^
         email.hashCode ^
-        profileIds.hashCode ^
+        name.hashCode ^
+        role.hashCode ^
+        flockIds.hashCode ^
+        activeFlocks.hashCode ^
         fcmToken.hashCode ^
         isOnline.hashCode ^
         createdAt.hashCode ^
-        updatedAt.hashCode;
+        updatedAt.hashCode ^
+        lastSyncedAt.hashCode ^
+        lastLocalModifiedAt.hashCode;
   }
 }

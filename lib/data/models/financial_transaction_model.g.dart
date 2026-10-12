@@ -9,7 +9,7 @@ part of 'financial_transaction_model.dart';
 class FinancialTransactionModelAdapter
     extends TypeAdapter<FinancialTransactionModel> {
   @override
-  final int typeId = 15;
+  final int typeId = 7;
 
   @override
   FinancialTransactionModel read(BinaryReader reader) {
@@ -26,7 +26,7 @@ class FinancialTransactionModelAdapter
       date: fields[5] as DateTime,
       notes: fields[6] as String?,
       lastUpdated: fields[7] as DateTime,
-      relatedFlock: fields[8] as String?,
+      flockId: fields[8] as String,
       paymentMethod: fields[9] as String?,
     );
   }
@@ -52,7 +52,7 @@ class FinancialTransactionModelAdapter
       ..writeByte(7)
       ..write(obj.lastUpdated)
       ..writeByte(8)
-      ..write(obj.relatedFlock)
+      ..write(obj.flockId)
       ..writeByte(9)
       ..write(obj.paymentMethod);
   }

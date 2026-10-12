@@ -8,7 +8,7 @@ part of 'breed_model.dart';
 
 class BreedModelAdapter extends TypeAdapter<BreedModel> {
   @override
-  final int typeId = 10;
+  final int typeId = 4;
 
   @override
   BreedModel read(BinaryReader reader) {
@@ -21,8 +21,8 @@ class BreedModelAdapter extends TypeAdapter<BreedModel> {
       name: fields[1] as String,
       purpose: fields[2] as String,
       keyBenefits: (fields[3] as List).cast<String>(),
-      weeklyExpectedWeight: (fields[4] as Map).cast<int, double>(),
-      weeklyFeedGrams: (fields[5] as Map).cast<int, double>(),
+      weeklyExpectedWeight: (fields[4] as Map).cast<dynamic, dynamic>(),
+      weeklyFeedGrams: (fields[5] as Map).cast<dynamic, dynamic>(),
       expectedEggsPerYear: fields[6] as int?,
       cycleDurationDays: fields[7] as int,
       defaultFeedGramsPerWeek: fields[8] as double,

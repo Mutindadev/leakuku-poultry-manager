@@ -8,7 +8,7 @@ part of 'stock_item_model.dart';
 
 class StockItemModelAdapter extends TypeAdapter<StockItemModel> {
   @override
-  final int typeId = 13;
+  final int typeId = 6;
 
   @override
   StockItemModel read(BinaryReader reader) {
@@ -27,13 +27,14 @@ class StockItemModelAdapter extends TypeAdapter<StockItemModel> {
       expiryDate: fields[7] as DateTime?,
       supplier: fields[8] as String?,
       cost: fields[9] as double?,
+      userId: fields[10] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, StockItemModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class StockItemModelAdapter extends TypeAdapter<StockItemModel> {
       ..writeByte(8)
       ..write(obj.supplier)
       ..writeByte(9)
-      ..write(obj.cost);
+      ..write(obj.cost)
+      ..writeByte(10)
+      ..write(obj.userId);
   }
 
   @override
