@@ -6,7 +6,7 @@ import 'package:leakuku/data/models/weekly_plan_model.dart';
 
 /// Provider for weekly plan data source
 final weeklyPlanDataSourceProvider = Provider<WeeklyPlanLocalDataSource>((ref) {
-  final weeklyPlanBox = Hive.box<List<WeeklyPlanModel>>('weeklyPlanBox');
+  final weeklyPlanBox = Hive.box<List<dynamic>>('weeklyPlanBox');
   return WeeklyPlanLocalDataSourceImpl(
     weeklyPlanBox: weeklyPlanBox,
     syncQueue: ref.watch(firestoreSyncQueueProvider),

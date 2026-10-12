@@ -29,12 +29,11 @@ abstract class WeeklyPlanLocalDataSource {
 }
 
 class WeeklyPlanLocalDataSourceImpl implements WeeklyPlanLocalDataSource {
-  final Box<List<WeeklyPlanModel>>
-      _weeklyPlanBox; // Store List<WeeklyPlanModel> per flockId
+  final Box<List<dynamic>> _weeklyPlanBox; // Store List<dynamic> per flockId
   final FirestoreSyncQueue? syncQueue;
 
   WeeklyPlanLocalDataSourceImpl({
-    required Box<List<WeeklyPlanModel>> weeklyPlanBox,
+    required Box<List<dynamic>> weeklyPlanBox,
     this.syncQueue,
   }) : _weeklyPlanBox = weeklyPlanBox;
 

@@ -87,7 +87,7 @@ final firestoreBackupServiceProvider = Provider<FirestoreBackupService>((ref) {
       'farmFinanceTransactionBox',
     ),
     vaccineBox: Hive.box<List<dynamic>>('vaccineBox'),
-    weeklyPlanBox: Hive.box<List<WeeklyPlanModel>>('weeklyPlanBox'),
+    weeklyPlanBox: Hive.box<List<dynamic>>('weeklyPlanBox'),
     flocks: ref.watch(firestoreFlockDataSourceProvider),
     stockItems: ref.watch(firestoreStockItemDataSourceProvider),
     stockHistory: ref.watch(firestoreStockHistoryDataSourceProvider),

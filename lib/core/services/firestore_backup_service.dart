@@ -33,7 +33,7 @@ class FirestoreBackupService {
   final Box<List<StockHistoryModel>> stockHistoryBox;
   final Box<FinancialTransactionModel> transactionBox;
   final Box<List<dynamic>> vaccineBox;
-  final Box<List<WeeklyPlanModel>> weeklyPlanBox;
+  final Box<List<dynamic>> weeklyPlanBox;
   final FirestoreCollectionDataSource<FlockModel> flocks;
   final FirestoreCollectionDataSource<StockItemModel> stockItems;
   final FirestoreCollectionDataSource<StockHistoryModel> stockHistory;

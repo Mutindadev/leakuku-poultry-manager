@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
-import 'package:leakuku/features/user/data/models/user.dart';
 import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -11,182 +10,83 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // final authState = ref.watch(authhProvider);
     final auth = ref.watch(userProvider);
     final user = auth.userModel;
     final stats = ref.watch(flockStatsProvider);
-    final flocks = ref.watch(flockProvider).flocks;
-    // final auth = ref.watch(authhProvider);
 
-    // Calculate member since from oldest flock or current date
-    String memberSince = 'New';
-    if (flocks.isNotEmpty) {
-      final oldestFlock = flocks
-          .reduce((a, b) => a.purchaseDate.isBefore(b.purchaseDate) ? a : b);
-      final date = oldestFlock.purchaseDate;
-      memberSince = '${_getMonthName(date.month)} ${date.year}';
-    }
+    final name =
+        user?.name.trim().isNotEmpty == true ? user!.name.trim() : 'Farmer';
 
     return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Profile Header (COMPACT) with Edit Icon
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.leakukuGreen,
-                  AppColors.leakukuGreen.withValues(alpha: 0.8),
-                ],
-              ),
-            ),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white,
-                      child: Text(
-                        (user?.name ?? 'F').substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.leakukuGreen,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      user?.name ?? 'Farmer',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? '',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9800),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        user?.role ?? 'Farmer',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Edit Icon (Top Right)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white, size: 22),
-                    onPressed: () => _showEditDialog(context, ref, user),
-                  ),
-                ),
-              ],
-            ),
+          _ProfileHeader(
+            name: name,
+            email: user?.email ?? '',
+            role: user?.role ?? 'Farmer',
           ),
-
-          // Statistics Cards
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        icon: FontAwesomeIcons.drumstickBite,
-                        title: 'Total Flocks',
-                        value: '${stats.totalFlocks}',
-                        color: AppColors.leakukuGreen,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        icon: FontAwesomeIcons.hashtag,
-                        title: 'Total Chickens',
-                        value: '${stats.totalChickens}',
-                        color: Colors.teal,
-                      ),
-                    ),
-                  ],
+          const SizedBox(height: 24),
+          Text(
+            'Account details',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.earthCharcoal,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 12),
-                _buildStatCard(
-                  context,
-                  icon: FontAwesomeIcons.calendar,
-                  title: 'Member Since',
-                  value: memberSince,
-                  color: Colors.indigo,
-                ),
-              ],
-            ),
           ),
-
-          // Logout Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red),
-                          child: const Text('Logout'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true && context.mounted) {
-                    await ref.read(userProvider.notifier).signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).pushReplacementNamed('/');
-                    }
-                  }
-                },
-                icon: const FaIcon(FontAwesomeIcons.rightFromBracket),
-                label: const Text('LOGOUT'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+          const SizedBox(height: 12),
+          _AccountDetails(
+            email: user?.email,
+            phone: user?.phonenumber,
+            role: user?.role,
+            createdAt: user?.createdAt,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Farm overview',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.earthCharcoal,
+                  fontWeight: FontWeight.bold,
                 ),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.65,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _FarmStat(
+                icon: FontAwesomeIcons.drumstickBite,
+                label: 'Total flocks',
+                value: '${stats.totalFlocks}',
+                color: AppColors.leakukuGreen,
               ),
+              _FarmStat(
+                icon: FontAwesomeIcons.hashtag,
+                label: 'Total chickens',
+                value: '${stats.totalChickens}',
+                color: AppColors.informationBlue,
+              ),
+            ],
+          ),
+          const SizedBox(height: 28),
+          OutlinedButton.icon(
+            onPressed: () => _confirmLogout(context, ref),
+            icon: const FaIcon(
+              FontAwesomeIcons.rightFromBracket,
+              size: 16,
+            ),
+            label: const Text('Log out'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.errorRed,
+              side: BorderSide(
+                color: AppColors.errorRed.withValues(alpha: 0.55),
+              ),
+              minimumSize: const Size(double.infinity, 50),
             ),
           ),
         ],
@@ -194,7 +94,180 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  String _getMonthName(int month) {
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorRed,
+            ),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await ref.read(userProvider.notifier).signOut();
+
+    if (context.mounted) {
+      Navigator.of(context).pushReplacementNamed('/');
+    }
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.role,
+  });
+
+  final String name;
+  final String email;
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isEmpty ? 'F' : name[0].toUpperCase();
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      color: AppColors.leakukuGreen,
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: AppColors.white,
+              child: Text(
+                initial,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.leakukuGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  if (email.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.white.withValues(alpha: 0.85),
+                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      role,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountDetails extends StatelessWidget {
+  const _AccountDetails({
+    required this.email,
+    required this.phone,
+    required this.role,
+    required this.createdAt,
+  });
+
+  final String? email;
+  final String? phone;
+  final String? role;
+  final DateTime? createdAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: [
+          _DetailRow(
+            icon: Icons.email_outlined,
+            label: 'Email',
+            value: _displayValue(email),
+          ),
+          const Divider(height: 1, indent: 56),
+          _DetailRow(
+            icon: Icons.phone_outlined,
+            label: 'Phone',
+            value: _displayValue(phone),
+          ),
+          const Divider(height: 1, indent: 56),
+          _DetailRow(
+            icon: Icons.badge_outlined,
+            label: 'Account type',
+            value: _displayValue(role),
+          ),
+          const Divider(height: 1, indent: 56),
+          _DetailRow(
+            icon: Icons.calendar_month_outlined,
+            label: 'Member since',
+            value: _formatDate(createdAt),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _displayValue(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Not added';
+    return value.trim();
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Unknown';
+
     const months = [
       'Jan',
       'Feb',
@@ -207,96 +280,106 @@ class ProfilePage extends ConsumerWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
-    return months[month - 1];
-  }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required FaIconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            FaIcon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
+    return '${months[date.month - 1]} ${date.year}';
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.leakukuGreen),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.softGray,
                   ),
             ),
-            Text(
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
               value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.earthCharcoal,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  void _showEditDialog(BuildContext context, WidgetRef ref, UserModel? user) {
-    if (user == null) return;
+class _FarmStat extends StatelessWidget {
+  const _FarmStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
-    final nameController = TextEditingController(text: user.name);
+  final FaIconData icon;
+  final String label;
+  final String value;
+  final Color color;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
           children: [
-            TextFormField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                prefixIcon: Icon(Icons.person),
+            FaIcon(icon, color: color, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.softGray,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.earthCharcoal,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              initialValue: user.email,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
-              ),
-              enabled: false,
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implement profile update
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile updated successfully'),
-                  backgroundColor: AppColors.leakukuGreen,
-                ),
-              );
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.leakukuGreen,
-            ),
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
