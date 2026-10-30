@@ -1,6 +1,6 @@
-import 'package:leakuku/data/models/vaccine_model.dart';
-import 'package:leakuku/data/datasources/vaccine_local_data_source.dart';
 import 'package:leakuku/core/services/notification_service.dart';
+import 'package:leakuku/data/datasources/vaccine_local_data_source.dart';
+import 'package:leakuku/data/models/vaccine_model.dart';
 
 /// Use case: Auto-generate vaccine schedule and notifications when flock is created
 class GenerateVaccineScheduleUseCase {
@@ -14,12 +14,14 @@ class GenerateVaccineScheduleUseCase {
 
   /// Generate vaccine schedule and schedule notifications
   Future<List<VaccineModel>> execute({
+    required String userId,
     required String flockId,
     required String breedId,
     required DateTime flockStartDate,
   }) async {
     // 1. Get vaccine templates for the breed
-    final vaccineTemplates = await vaccineDataSource.getVaccineTemplatesByBreed(breedId);
+    final vaccineTemplates =
+        await vaccineDataSource.getVaccineTemplatesByBreed(breedId);
 
     if (vaccineTemplates.isEmpty) {
       // No vaccines defined for this breed yet
@@ -27,7 +29,11 @@ class GenerateVaccineScheduleUseCase {
     }
 
     // 2. Save vaccine schedule to Hive
-    await vaccineDataSource.saveVaccineSchedule(flockId, vaccineTemplates);
+    await vaccineDataSource.saveVaccineSchedule(
+      userId,
+      flockId,
+      vaccineTemplates,
+    );
 
     // 3. Schedule notifications for each vaccine
     for (final vaccine in vaccineTemplates) {

@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/firestore_data_providers.dart';
 import 'package:leakuku/data/datasources/financial_transaction_local_data_source.dart';
 import 'package:leakuku/data/models/financial_transaction_model.dart';
 import 'package:leakuku/features/finances/data/financial_transaction_repository.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 const List<String> incomeCategories = [
   'Bird Sales',
@@ -29,7 +30,10 @@ const List<String> expenseCategories = [
 final financialTransactionLocalDataSourceProvider =
     Provider<FinancialTransactionLocalDataSource>((ref) {
   final box = Hive.box<FinancialTransactionModel>('farmFinanceTransactionBox');
-  return FinancialTransactionLocalDataSourceImpl(transactionBox: box);
+  return FinancialTransactionLocalDataSourceImpl(
+    transactionBox: box,
+    syncQueue: ref.watch(firestoreSyncQueueProvider),
+  );
 });
 
 final financialTransactionRepositoryProvider =
@@ -77,7 +81,7 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
   Future<void> loadTransactions() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final userId = ref.read(authhProvider).user?.id;
+      final userId = ref.read(userProvider).userModel?.uid;
       if (userId == null || userId.isEmpty) {
         state = state.copyWith(transactions: const [], isLoading: false);
         return;
@@ -97,10 +101,10 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
     required double amount,
     required DateTime date,
     String? notes,
-    String? relatedFlock,
+    required String flockId,
     String? paymentMethod,
   }) async {
-    final userId = ref.read(authhProvider).user?.id;
+    final userId = ref.read(userProvider).userModel?.uid;
     if (userId == null || userId.isEmpty) {
       state = state.copyWith(error: 'User not found. Please log in again.');
       return;
@@ -116,9 +120,7 @@ class FarmFinanceNotifier extends StateNotifier<FarmFinanceState> {
       date: date,
       notes: (notes == null || notes.trim().isEmpty) ? null : notes.trim(),
       lastUpdated: now,
-      relatedFlock: (relatedFlock == null || relatedFlock.trim().isEmpty)
-          ? null
-          : relatedFlock.trim(),
+      flockId: flockId,
       paymentMethod: (paymentMethod == null || paymentMethod.trim().isEmpty)
           ? null
           : paymentMethod.trim(),

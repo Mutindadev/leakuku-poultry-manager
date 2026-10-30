@@ -53,7 +53,7 @@ class UserRemoteDataSourseImlementation implements UserRemoteDataSource {
       final querySnapshot = await _firestore.collection(userCollection).get();
 
       final users = querySnapshot.docs
-          .map((doc) => UserModel.fromMap(doc.data()))
+          .map((doc) => UserModel.fromMap(_normalizeDateValues(doc.data())))
           .toList();
 
       return Right(users);
@@ -79,7 +79,9 @@ class UserRemoteDataSourseImlementation implements UserRemoteDataSource {
         return Left(ServerFailure(message: 'User not found', statusCode: 404));
       }
 
-      final user = UserModel.fromMap(docSnapshot.data()!);
+      final user = UserModel.fromMap(
+        _normalizeDateValues({...docSnapshot.data()!, 'uid': docSnapshot.id}),
+      );
       return Right(user);
     } on FirebaseException catch (e) {
       return Left(
@@ -97,7 +99,7 @@ class UserRemoteDataSourseImlementation implements UserRemoteDataSource {
   ResultFuture<void> updateUser(DataMap updateData) async {
     try {
       // Extract userId from updateData
-      final userId = updateData['id'] as String?;
+      final userId = (updateData['uid'] ?? updateData['id']) as String?;
 
       if (userId == null) {
         return Left(
@@ -111,6 +113,7 @@ class UserRemoteDataSourseImlementation implements UserRemoteDataSource {
       // Remove id from updateData to avoid updating the document ID
       final dataToUpdate = Map<String, dynamic>.from(updateData);
       dataToUpdate.remove('id');
+      dataToUpdate.remove('uid');
 
       // Add timestamp for when the update occurred
       dataToUpdate['updatedAt'] = FieldValue.serverTimestamp();
@@ -131,5 +134,14 @@ class UserRemoteDataSourseImlementation implements UserRemoteDataSource {
     } catch (e) {
       return Left(ServerFailure(message: e.toString(), statusCode: 500));
     }
+  }
+
+  Map<String, dynamic> _normalizeDateValues(Map<String, dynamic> data) {
+    return data.map((key, value) {
+      if (value is Timestamp) {
+        return MapEntry(key, value.millisecondsSinceEpoch);
+      }
+      return MapEntry(key, value);
+    });
   }
 }

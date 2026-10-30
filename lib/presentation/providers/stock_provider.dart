@@ -1,27 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
+import 'package:leakuku/core/providers/firestore_data_providers.dart';
 import 'package:leakuku/data/datasources/stock_local_data_source.dart';
 import 'package:leakuku/data/models/stock_history_model.dart';
 import 'package:leakuku/data/models/stock_item_model.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 final stockLocalDataSourceProvider = Provider<StockLocalDataSource>((ref) {
   final itemBox = Hive.box<StockItemModel>('stockItemBox');
-  final historyBox = Hive.box<List<dynamic>>('stockHistoryBox');
+  final historyBox = Hive.box<List<StockHistoryModel>>('stockHistoryBox');
   return StockLocalDataSourceImpl(
     stockItemBox: itemBox,
     stockHistoryBox: historyBox,
+    syncQueue: ref.watch(firestoreSyncQueueProvider),
   );
 });
 
 final stockItemsProvider = FutureProvider<List<StockItemModel>>((ref) async {
+  final userId = ref.watch(userProvider).userModel?.uid;
+  if (userId == null || userId.isEmpty) return const [];
   final dataSource = ref.read(stockLocalDataSourceProvider);
-  return dataSource.getAllItems();
+  return dataSource.getAllItems(userId);
 });
 
 final stockHistoryProvider =
     FutureProvider.family<List<StockHistoryModel>, String>((ref, itemId) async {
+  final userId = ref.watch(userProvider).userModel?.uid;
+  if (userId == null || userId.isEmpty) return const [];
   final dataSource = ref.read(stockLocalDataSourceProvider);
-  return dataSource.getItemHistory(itemId);
+  return dataSource.getItemHistory(userId, itemId);
 });
 
 final stockControllerProvider = Provider<StockController>((ref) {
@@ -45,7 +52,12 @@ class StockController {
     DateTime? expiryDate,
     String? notes,
   }) async {
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('A signed-in user is required to manage stock.');
+    }
     await ref.read(stockLocalDataSourceProvider).addStock(
+          userId: userId,
           category: category,
           itemName: itemName,
           quantity: quantity,
@@ -66,12 +78,36 @@ class StockController {
     required DateTime date,
     String? notes,
   }) async {
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('A signed-in user is required to manage stock.');
+    }
     await ref.read(stockLocalDataSourceProvider).useStock(
+          userId: userId,
           itemId: itemId,
           quantityUsed: quantityUsed,
           date: date,
           notes: notes,
         );
+    ref.invalidate(stockItemsProvider);
+    ref.invalidate(stockHistoryProvider(itemId));
+  }
+
+  Future<void> updateItem(StockItemModel item) async {
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('A signed-in user is required to manage stock.');
+    }
+    await ref.read(stockLocalDataSourceProvider).updateItem(userId, item);
+    ref.invalidate(stockItemsProvider);
+  }
+
+  Future<void> deleteItem(String itemId) async {
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('A signed-in user is required to manage stock.');
+    }
+    await ref.read(stockLocalDataSourceProvider).deleteItem(userId, itemId);
     ref.invalidate(stockItemsProvider);
     ref.invalidate(stockHistoryProvider(itemId));
   }

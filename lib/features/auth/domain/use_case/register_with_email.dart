@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:leakuku/core/utils/typedef.dart';
 import 'package:leakuku/features/auth/domain/repositories/auth_repository.dart';
 
@@ -6,7 +7,7 @@ class RegisterWithEmailUseCase {
 
   RegisterWithEmailUseCase({required this.repository});
 
-  ResultFuture<void> call(
+  ResultFuture<User> call(
     String email,
     String password,
     String fullName,

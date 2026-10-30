@@ -12,7 +12,7 @@ class TransactionFormSheet extends StatefulWidget {
     required double amount,
     required DateTime date,
     String? notes,
-    String? relatedFlock,
+    required String flockId,
     String? paymentMethod,
   }) onSave;
 
@@ -50,7 +50,7 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
     _selectedCategory = widget.existing?.category;
     _amountController.text = widget.existing?.amount.toStringAsFixed(2) ?? '';
     _notesController.text = widget.existing?.notes ?? '';
-    _relatedFlockController.text = widget.existing?.relatedFlock ?? '';
+    _relatedFlockController.text = widget.existing?.flockId ?? '';
     _paymentMethodController.text = widget.existing?.paymentMethod ?? '';
 
     if (_selectedCategory != null && !_categories.contains(_selectedCategory)) {
@@ -101,7 +101,7 @@ class _TransactionFormSheetState extends State<TransactionFormSheet> {
       amount: amount,
       date: _selectedDate,
       notes: _notesController.text,
-      relatedFlock: _relatedFlockController.text,
+      flockId: _relatedFlockController.text,
       paymentMethod: _paymentMethodController.text,
     );
 

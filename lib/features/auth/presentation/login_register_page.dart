@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:leakuku/core/di.dart';
 import 'package:leakuku/core/theme/app_colors.dart';
-import 'package:leakuku/presentation/providers/auth_provider.dart';
+import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 
 class LoginRegisterPage extends ConsumerStatefulWidget {
   const LoginRegisterPage({super.key});
@@ -20,15 +22,15 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
   String _role = 'Farmer';
   bool _obscurePassword = true;
   bool _redirected = false;
+  bool _preparingDashboard = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      final authState = ref.read(authhProvider);
-      if (!_redirected && authState.user != null) {
-        _redirected = true;
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+      final auth = ref.read(userProvider);
+      if (auth.userModel != null && !auth.isLoading) {
+        _prepareDashboard();
       }
     });
   }
@@ -45,6 +47,39 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
     _emailController.clear();
     _passwordController.clear();
     _nameController.clear();
+  }
+
+  Future<void> _prepareDashboard() async {
+    if (_redirected || _preparingDashboard) return;
+    final userId = ref.read(userProvider).userModel?.uid;
+    if (userId == null || userId.isEmpty) return;
+
+    setState(() => _preparingDashboard = true);
+    final flocks = ref.read(flockProvider.notifier);
+    await flocks.loadFlocks();
+    if (!mounted) return;
+
+    try {
+      await ref.read(firestoreSyncCoordinatorProvider).syncNow(userId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not sync farm data. Check your connection.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      if (ref.read(flockProvider).flocks.isEmpty && _isLogin) {
+        setState(() => _preparingDashboard = false);
+        return;
+      }
+    }
+
+    await flocks.loadFlocks();
+    if (!mounted) return;
+
+    _redirected = true;
+    Navigator.of(context).pushReplacementNamed('/dashboard');
   }
 
   String? _validateEmail(String? value) {
@@ -80,29 +115,30 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authhProvider, (previous, next) {
-      if ((next.error ?? '').isNotEmpty) {
-        final isRegister = next.lastWasRegister == true;
-        final isInput = next.errorIsInput;
-        final bg = isInput
-            ? Colors.amber.shade800
-            : (isRegister ? Colors.orange.shade700 : Colors.red.shade700);
-        final prefix =
-            isInput ? 'Input' : (isRegister ? 'Registration' : 'Login');
+    ref.listen<UserState>(userProvider, (previous, next) {
+      if ((next.errorMessage ?? '').isNotEmpty) {
+        // final isRegister = next.lastWasRegister == true;
+        // final isInput = next.errorIsInput;
+        // final bg = isInput
+        //     ? Colors.amber.shade800
+        //     : (isRegister ? Colors.orange.shade700 : Colors.red.shade700);
+        // final prefix =
+        //     isInput ? 'Input' : (isRegister ? 'Registration' : 'Login');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$prefix error: ${next.error}'),
-            backgroundColor: bg,
+            // content: Text('$prefix error: ${next.errorMessage}'),
+            content: Text('Error: ${next.errorMessage}'),
+            backgroundColor: Colors.red.shade700,
           ),
         );
       }
-      if (next.user != null) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+      if (next.userModel != null && !next.isLoading) {
+        _prepareDashboard();
       }
     });
 
-    final authState = ref.watch(authhProvider);
+    final auth = ref.watch(userProvider);
 
     return Scaffold(
       backgroundColor: AppColors.farmCream,
@@ -196,27 +232,27 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: authState.isLoading
+                        onPressed: auth.isLoading || _preparingDashboard
                             ? null
                             : () async {
                                 if (_formKey.currentState!.validate()) {
                                   if (_isLogin) {
                                     await ref
-                                        .read(authhProvider.notifier)
-                                        .login(
+                                        .read(userProvider.notifier)
+                                        .handleSignIn(
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
                                         );
                                   } else {
                                     await ref
-                                        .read(authhProvider.notifier)
-                                        .register(
-                                          _nameController.text.trim(),
+                                        .read(userProvider.notifier)
+                                        .handleRegister(
                                           _emailController.text.trim(),
                                           _passwordController.text.trim(),
-                                          _role,
+                                          _nameController.text.trim(),
                                         );
                                   }
+                                  if (mounted) await _prepareDashboard();
                                 }
                               },
                         style: ElevatedButton.styleFrom(
@@ -224,7 +260,7 @@ class _LoginRegisterPageState extends ConsumerState<LoginRegisterPage> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: authState.isLoading
+                        child: auth.isLoading || _preparingDashboard
                             ? const CircularProgressIndicator(
                                 color: Colors.white)
                             : Text(

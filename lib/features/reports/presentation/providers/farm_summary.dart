@@ -3,6 +3,7 @@ import 'package:leakuku/features/flock/presentation/providers/flock_provider.dar
 import 'package:leakuku/features/reports/data/models/farm_summary_data.dart';
 import 'package:leakuku/features/reports/domain/service/report_service.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
+import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
 import 'package:leakuku/presentation/providers/stock_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 
@@ -12,6 +13,7 @@ final farmSummaryProvider =
     final flockState = ref.watch(flockProvider);
     final flockStats = ref.watch(flockStatsProvider);
     final stockItems = await ref.watch(stockItemsProvider.future);
+    final userId = ref.watch(userProvider).userModel?.uid ?? '';
     final stockDataSource = ref.read(stockLocalDataSourceProvider);
     final weeklyPlanDataSource = ref.read(weeklyPlanDataSourceProvider);
     const reportService = ReportService();
@@ -31,7 +33,7 @@ final farmSummaryProvider =
     }
 
     final feedHistoryLists = await Future.wait(
-      feedItems.map((item) => stockDataSource.getItemHistory(item.id)),
+      feedItems.map((item) => stockDataSource.getItemHistory(userId, item.id)),
     );
     final feedUsedByUnit = <String, double>{};
     for (final histories in feedHistoryLists) {

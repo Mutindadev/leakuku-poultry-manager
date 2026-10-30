@@ -211,8 +211,8 @@ class _FarmFinancesPageState extends ConsumerState<FarmFinancesPage> {
             required String category,
             required double amount,
             required DateTime date,
+            required String flockId,
             String? notes,
-            String? relatedFlock,
             String? paymentMethod,
           }) async {
             final notifier = ref.read(farmFinanceProvider.notifier);
@@ -223,7 +223,7 @@ class _FarmFinancesPageState extends ConsumerState<FarmFinancesPage> {
                 amount: amount,
                 date: date,
                 notes: notes,
-                relatedFlock: relatedFlock,
+                flockId: flockId,
                 paymentMethod: paymentMethod,
               );
             } else {
@@ -234,7 +234,7 @@ class _FarmFinancesPageState extends ConsumerState<FarmFinancesPage> {
                   amount: amount,
                   date: date,
                   notes: notes,
-                  relatedFlock: relatedFlock,
+                  flockId: flockId,
                   paymentMethod: paymentMethod,
                 ),
               );
@@ -267,8 +267,7 @@ class _FarmFinancesPageState extends ConsumerState<FarmFinancesPage> {
             Text(
                 'Notes: ${transaction.notes?.trim().isNotEmpty == true ? transaction.notes : 'None'}'),
             const SizedBox(height: 6),
-            Text(
-                'Related Flock: ${transaction.relatedFlock?.trim().isNotEmpty == true ? transaction.relatedFlock : 'None'}'),
+            Text('Related Flock: ${transaction.flockId}'),
             const SizedBox(height: 6),
             Text(
                 'Payment Method: ${transaction.paymentMethod?.trim().isNotEmpty == true ? transaction.paymentMethod : 'None'}'),

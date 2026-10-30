@@ -1,8 +1,8 @@
+import 'package:leakuku/data/datasources/breed_local_data_source.dart';
+import 'package:leakuku/data/datasources/weekly_plan_local_data_source.dart';
 // ignore: unused_import
 import 'package:leakuku/data/models/breed_model.dart';
 import 'package:leakuku/data/models/weekly_plan_model.dart';
-import 'package:leakuku/data/datasources/breed_local_data_source.dart';
-import 'package:leakuku/data/datasources/weekly_plan_local_data_source.dart';
 
 /// Use case: Auto-generate weekly activity plans when flock is created
 class GenerateWeeklyPlanUseCase {
@@ -16,6 +16,7 @@ class GenerateWeeklyPlanUseCase {
 
   /// Generate and save weekly plans for a new flock
   Future<List<WeeklyPlanModel>> execute({
+    required String userId,
     required String flockId,
     required String breedId,
     required int flockQuantity,
@@ -29,6 +30,7 @@ class GenerateWeeklyPlanUseCase {
 
     // 2. Generate weekly plans using breed defaults
     final plans = await weeklyPlanDataSource.generateWeeklyPlans(
+      userId: userId,
       flockId: flockId,
       breed: breed,
       flockQuantity: flockQuantity,

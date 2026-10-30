@@ -8,7 +8,7 @@ part of 'stock_history_model.dart';
 
 class StockHistoryModelAdapter extends TypeAdapter<StockHistoryModel> {
   @override
-  final int typeId = 14;
+  final int typeId = 5;
 
   @override
   StockHistoryModel read(BinaryReader reader) {
@@ -27,13 +27,14 @@ class StockHistoryModelAdapter extends TypeAdapter<StockHistoryModel> {
       date: fields[7] as DateTime,
       balanceAfter: fields[8] as double,
       notes: fields[9] as String?,
+      userId: fields[10] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, StockHistoryModel obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class StockHistoryModelAdapter extends TypeAdapter<StockHistoryModel> {
       ..writeByte(8)
       ..write(obj.balanceAfter)
       ..writeByte(9)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(10)
+      ..write(obj.userId);
   }
 
   @override

@@ -8,7 +8,7 @@ part of 'vaccine_model.dart';
 
 class VaccineModelAdapter extends TypeAdapter<VaccineModel> {
   @override
-  final int typeId = 11;
+  final int typeId = 0;
 
   @override
   VaccineModel read(BinaryReader reader) {
@@ -25,13 +25,18 @@ class VaccineModelAdapter extends TypeAdapter<VaccineModel> {
       application: fields[5] as String,
       isOptional: fields[6] as bool,
       breedId: fields[7] as String,
+      flockId: fields[8] as String?,
+      status: fields[9] as String,
+      completedAt: fields[10] as DateTime?,
+      createdAt: fields[11] as DateTime?,
+      updatedAt: fields[12] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, VaccineModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +52,17 @@ class VaccineModelAdapter extends TypeAdapter<VaccineModel> {
       ..writeByte(6)
       ..write(obj.isOptional)
       ..writeByte(7)
-      ..write(obj.breedId);
+      ..write(obj.breedId)
+      ..writeByte(8)
+      ..write(obj.flockId)
+      ..writeByte(9)
+      ..write(obj.status)
+      ..writeByte(10)
+      ..write(obj.completedAt)
+      ..writeByte(11)
+      ..write(obj.createdAt)
+      ..writeByte(12)
+      ..write(obj.updatedAt);
   }
 
   @override

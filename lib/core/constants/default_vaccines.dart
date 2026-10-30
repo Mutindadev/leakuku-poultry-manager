@@ -12,6 +12,7 @@ final List<VaccineModel> defaultBroilerVaccines = [
     application: 'Eye drop or Drinking water',
     isOptional: false,
     breedId: 'broilers',
+    status: '',
   ),
 
   // Day 7: Gumboro (IBD booster)
@@ -23,6 +24,7 @@ final List<VaccineModel> defaultBroilerVaccines = [
     application: 'Drinking water',
     isOptional: false,
     breedId: 'broilers',
+    status: '',
   ),
 
   // Day 14: ND Booster (Newcastle Disease)
@@ -34,6 +36,7 @@ final List<VaccineModel> defaultBroilerVaccines = [
     application: 'Drinking water or Eye drop',
     isOptional: false,
     breedId: 'broilers',
+    status: '',
   ),
 
   // Day 21: Gumboro Booster
@@ -45,6 +48,7 @@ final List<VaccineModel> defaultBroilerVaccines = [
     application: 'Drinking water',
     isOptional: false,
     breedId: 'broilers',
+    status: '',
   ),
 
   // Week 6-8: Fowl Pox (optional for longer cycles)
@@ -57,6 +61,7 @@ final List<VaccineModel> defaultBroilerVaccines = [
     application: 'Wing web stab',
     isOptional: true,
     breedId: 'broilers',
+    status: '',
   ),
 ];
 

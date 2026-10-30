@@ -29,9 +29,11 @@ class AuthRemoteDataSourceImplementation implements AuthRemoteDataSource {
 
       return Right(result.user!);
     } on FirebaseAuthException catch (e) {
+      print(e);
       String message = _getAuthErrorMessage(e.code);
       return Left(ServerFailure(message: message, statusCode: e.hashCode));
     } catch (e) {
+      print(e);
       return Left(
         ServerFailure(
           message: 'An unexpected error occurred: ${e.toString()}',
@@ -69,9 +71,11 @@ class AuthRemoteDataSourceImplementation implements AuthRemoteDataSource {
 
       return Right(result.user!);
     } on FirebaseAuthException catch (e) {
+      print(e);
       String message = _getAuthErrorMessage(e.code);
       return Left(ServerFailure(message: message, statusCode: e.hashCode));
     } catch (e) {
+      print(e);
       return Left(
         ServerFailure(
           message: 'An unexpected error occurred: ${e.toString()}',
