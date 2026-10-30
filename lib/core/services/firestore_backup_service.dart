@@ -18,12 +18,14 @@ class FirestoreBackupService {
     required this.transactionBox,
     required this.vaccineBox,
     required this.weeklyPlanBox,
+    required this.dailyTaskConfigBox,
     required this.flocks,
     required this.stockItems,
     required this.stockHistory,
     required this.transactions,
     required this.vaccines,
     required this.weeklyPlans,
+    required this.dailyTaskConfigs,
     required this.syncQueue,
     required this.notificationService,
   });
@@ -34,12 +36,14 @@ class FirestoreBackupService {
   final Box<FinancialTransactionModel> transactionBox;
   final Box<List<dynamic>> vaccineBox;
   final Box<List<dynamic>> weeklyPlanBox;
+  final Box<Map<dynamic, dynamic>> dailyTaskConfigBox;
   final FirestoreCollectionDataSource<FlockModel> flocks;
   final FirestoreCollectionDataSource<StockItemModel> stockItems;
   final FirestoreCollectionDataSource<StockHistoryModel> stockHistory;
   final FirestoreCollectionDataSource<FinancialTransactionModel> transactions;
   final FirestoreCollectionDataSource<VaccineModel> vaccines;
   final FirestoreCollectionDataSource<WeeklyPlanModel> weeklyPlans;
+  final FirestoreCollectionDataSource<Map<String, dynamic>> dailyTaskConfigs;
   final FirestoreSyncQueue syncQueue;
   final NotificationService notificationService;
   final Map<String, Future<void>> _activeSyncs = {};
@@ -56,7 +60,7 @@ class FirestoreBackupService {
 
   Future<void> _syncUser(String uid) async {
     var stage = 0;
-    const totalStages = 8;
+    const totalStages = 9;
     Future<void> report(String status) async {
       await notificationService.showSyncProgress(
         progressPercent: (stage * 100 / totalStages).round(),
@@ -261,6 +265,29 @@ class FirestoreBackupService {
           remoteSource: weeklyPlans,
         );
       }
+
+      stage++;
+      await report('Syncing daily task settings');
+      final localTaskConfigs = dailyTaskConfigBox.values
+          .map((item) => Map<String, dynamic>.from(item))
+          .where((item) => item['userId'] == uid)
+          .toList();
+      final remoteTaskConfigs = await dailyTaskConfigs.readAll(uid);
+      await _reconcile<Map<String, dynamic>>(
+        uid: uid,
+        collection: FirestoreCollections.dailyTaskConfigs,
+        local: localTaskConfigs,
+        remote: remoteTaskConfigs,
+        idOf: (item) => item['id'] as String,
+        modifiedAt: (item) => DateTime.fromMillisecondsSinceEpoch(
+          (item['updatedAt'] as num).toInt(),
+        ),
+        saveLocal: (item) => dailyTaskConfigBox.put('$uid/${item['id']}', item),
+        deleteLocal: (id) => dailyTaskConfigBox.delete('$uid/$id'),
+        deletedIds:
+            tombstones[FirestoreCollections.dailyTaskConfigs] ?? const {},
+        remoteSource: dailyTaskConfigs,
+      );
 
       stage++;
       await report('Uploading pending changes');

@@ -10,6 +10,7 @@ class FirestoreCollections {
   static const financialTransactions = 'financialTransactions';
   static const vaccines = 'vaccines';
   static const weeklyPlans = 'weeklyPlans';
+  static const dailyTaskConfigs = 'dailyTaskConfigs';
 
   const FirestoreCollections._();
 }

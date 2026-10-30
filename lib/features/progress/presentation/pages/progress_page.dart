@@ -6,12 +6,13 @@ import 'package:leakuku/features/flock/data/models/flock_model.dart';
 import 'package:leakuku/features/flock/presentation/providers/flock_provider.dart';
 import 'package:leakuku/features/progress/data/models/daily_task.dart';
 import 'package:leakuku/features/progress/domain/service/progress_service.dart';
+import 'package:leakuku/features/progress/presentation/providers/daily_tasks_provider.dart';
+import 'package:leakuku/features/progress/presentation/widgets/daily_task_manager_sheet.dart';
 import 'package:leakuku/features/progress/presentation/widgets/empty_daily_record.dart';
 import 'package:leakuku/features/progress/presentation/widgets/header_card.dart';
 import 'package:leakuku/features/progress/presentation/widgets/plan_card.dart';
 import 'package:leakuku/features/progress/presentation/widgets/record_card.dart';
 import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
-import 'package:leakuku/presentation/providers/vaccine_provider.dart';
 import 'package:leakuku/presentation/providers/weekly_plan_provider.dart';
 
 class ProgressPage extends ConsumerStatefulWidget {
@@ -82,23 +83,13 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
     final stage = _progressService.getStage(ageDays);
     final currentWeek = ageDays < 0 ? 1 : (ageDays ~/ 7) + 1;
     final weeklyPlansAsync = ref.watch(weeklyPlansProvider(flock.id));
-    final vaccineScheduleAsync = ref.watch(vaccineScheduleProvider(flock.id));
 
     final plans = weeklyPlansAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const <WeeklyPlanModel>[],
     );
     final currentPlan = _progressService.findCurrentPlan(plans, currentWeek);
-    final vaccines = vaccineScheduleAsync.maybeWhen(
-      data: (value) => value,
-      orElse: () => const [],
-    );
-    final tasks = _progressService.buildTasks(
-      stage: stage,
-      currentPlan: currentPlan,
-      dueVaccinesToday:
-          _progressService.dueVaccinesToday(flock.purchaseDate, vaccines),
-    );
+    final tasks = ref.watch(dailyTasksForFlockProvider(flock));
 
     _syncDraftState(
       flock: flock,
@@ -137,6 +128,11 @@ class _ProgressPageState extends ConsumerState<ProgressPage> {
                   flockId: flock.id,
                   tasks: tasks,
                   taskState: taskState,
+                  onManageTasks: () => showDailyTaskManager(
+                    context,
+                    ref,
+                    flocks: flocks,
+                  ),
                   onTaskStateChanged: (updatedTaskState) {
                     setState(() {
                       _taskStateByFlock[flock.id] = updatedTaskState;

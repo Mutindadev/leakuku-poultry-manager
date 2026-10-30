@@ -74,6 +74,15 @@ final firestoreWeeklyPlanDataSourceProvider =
   );
 });
 
+final firestoreDailyTaskConfigDataSourceProvider =
+    Provider<FirestoreCollectionDataSource<Map<String, dynamic>>>((ref) {
+  return FirestoreCollectionDataSource<Map<String, dynamic>>(
+    collectionName: FirestoreCollections.dailyTaskConfigs,
+    decode: (data) => data,
+    encode: (data) => data,
+  );
+});
+
 final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
@@ -88,12 +97,14 @@ final firestoreBackupServiceProvider = Provider<FirestoreBackupService>((ref) {
     ),
     vaccineBox: Hive.box<List<dynamic>>('vaccineBox'),
     weeklyPlanBox: Hive.box<List<dynamic>>('weeklyPlanBox'),
+    dailyTaskConfigBox: Hive.box<Map<dynamic, dynamic>>('dailyTaskConfigBox'),
     flocks: ref.watch(firestoreFlockDataSourceProvider),
     stockItems: ref.watch(firestoreStockItemDataSourceProvider),
     stockHistory: ref.watch(firestoreStockHistoryDataSourceProvider),
     transactions: ref.watch(firestoreFinancialTransactionDataSourceProvider),
     vaccines: ref.watch(firestoreVaccineDataSourceProvider),
     weeklyPlans: ref.watch(firestoreWeeklyPlanDataSourceProvider),
+    dailyTaskConfigs: ref.watch(firestoreDailyTaskConfigDataSourceProvider),
     syncQueue: ref.watch(firestoreSyncQueueProvider),
     notificationService: ref.watch(notificationServiceProvider),
   );

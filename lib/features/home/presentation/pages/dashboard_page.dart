@@ -12,6 +12,7 @@ import 'package:leakuku/features/home/presentation/widgets/farm_plan.dart';
 import 'package:leakuku/features/home/presentation/widgets/overview_card.dart';
 import 'package:leakuku/features/profile/presentation/profile_page.dart';
 import 'package:leakuku/features/progress/presentation/pages/progress_page.dart';
+import 'package:leakuku/features/progress/presentation/widgets/daily_task_manager_sheet.dart';
 import 'package:leakuku/features/reports/data/models/upcoming_vaccination.dart';
 import 'package:leakuku/features/reports/presentation/pages/reports_page.dart';
 import 'package:leakuku/features/user/presentation/provider/user_provider.dart';
@@ -77,15 +78,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
             const SizedBox(height: 16),
 
-            _buildSectionTitle('Today\'s Farm Plan'),
+            Row(
+              children: [
+                Expanded(child: _buildSectionTitle('Today\'s Farm Plan')),
+                IconButton(
+                  tooltip: 'Manage daily tasks',
+                  onPressed: () => showDailyTaskManager(
+                    context,
+                    ref,
+                    flocks: flockState.flocks,
+                  ),
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 10),
 
             FarmPlan(
-              selectedIndex: _selectedIndex,
               flocks: flockState.flocks,
-              nextVaccination: nextVaccination,
-              totalaDailyFeed: _calculateDailyFeed(flockState.flocks),
               onIndexChanged: (index) {
                 setState(() {
                   _selectedIndex = index;

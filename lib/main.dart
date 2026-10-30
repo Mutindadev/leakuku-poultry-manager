@@ -61,6 +61,7 @@ void main() async {
   // Open boxes
   await Hive.openBox<UserModel>('userBox');
   await Hive.openBox<Map<dynamic, dynamic>>('firestoreSyncQueue');
+  await Hive.openBox<Map<dynamic, dynamic>>('dailyTaskConfigBox');
   await Hive.openBox<FlockModel>('flockBox');
   final breedBox = await Hive.openBox<BreedModel>('breedBox');
   await Hive.openBox<List<dynamic>>('vaccineBox');

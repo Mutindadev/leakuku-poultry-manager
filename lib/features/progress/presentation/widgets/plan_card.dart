@@ -8,6 +8,7 @@ class PlanCard extends StatelessWidget {
   final List<DailyTask> tasks;
   final Map<String, bool> taskState;
   final ValueChanged<Map<String, bool>> onTaskStateChanged;
+  final VoidCallback onManageTasks;
 
   const PlanCard({
     super.key,
@@ -15,6 +16,7 @@ class PlanCard extends StatelessWidget {
     required this.tasks,
     required this.taskState,
     required this.onTaskStateChanged,
+    required this.onManageTasks,
   });
 
   @override
@@ -27,12 +29,23 @@ class PlanCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Today\'s Plan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.earthCharcoal,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Today\'s Plan',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.earthCharcoal,
+                        ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Manage daily tasks',
+                  onPressed: onManageTasks,
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             Text(

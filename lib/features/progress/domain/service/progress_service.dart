@@ -69,6 +69,7 @@ class ProgressService {
   }) {
     final tasks = <DailyTask>[
       DailyTask(
+        id: 'feed_birds',
         title: 'Feed birds',
         subtitle: currentPlan == null
             ? null
@@ -77,30 +78,37 @@ class ProgressService {
         color: AppColors.leakukuGreen,
       ),
       const DailyTask(
+        id: 'refresh_water',
         title: 'Refresh water',
         subtitle: 'Clean drinkers and refill fresh water.',
         icon: FontAwesomeIcons.glassWater,
         color: Colors.blue,
       ),
       const DailyTask(
+        id: 'observe_bird_activity',
         title: 'Observe bird activity',
         subtitle: 'Watch appetite, movement, and comfort in the house.',
         icon: FontAwesomeIcons.eye,
         color: Colors.teal,
       ),
       const DailyTask(
+        id: 'check_litter',
         title: 'Check litter',
         subtitle: 'Remove wet spots and keep the floor dry.',
         icon: FontAwesomeIcons.broom,
         color: Colors.brown,
       ),
       const DailyTask(
+        id: 'record_mortality',
         title: 'Record mortality',
         subtitle: 'Confirm any birds lost before you finish the day.',
         icon: FontAwesomeIcons.heartPulse,
         color: Colors.red,
       ),
       DailyTask(
+        id: stage == 'Brooding'
+            ? 'check_brooder_temperature'
+            : 'weigh_sample_birds',
         title: stage == 'Brooding'
             ? 'Check brooder temperature'
             : 'Weigh sample birds',
@@ -117,6 +125,7 @@ class ProgressService {
     if (dueVaccinesToday > 0) {
       tasks.add(
         DailyTask(
+          id: 'administer_scheduled_vaccine',
           title: 'Administer scheduled vaccine',
           subtitle: dueVaccinesToday == 1
               ? 'There is 1 vaccine due today.'
